@@ -145,15 +145,16 @@ def afficher_correlations(data, variables, categorie=None):
             ax.set_title('r²=' + str(corr) + ' (' + force_mesure(corr,
                          'corrélation') + ')', y=0.99, loc='left')
 
+
 def correlation_matrix(data, corr_seuil=0):
     # Compute the correlation matrix
-    cols = colsOfType(data, ['int64','int32','float64','float32'])
+    cols = colsOfType(data, ['int64', 'int32', 'float64', 'float32'])
     corr = data[cols].corr()
 
     # Filter weak correlations
-    corr = corr[abs(corr)>=corr_seuil]
+    corr = corr[abs(corr) >= corr_seuil]
     corr_count = corr[corr.notna()].count()
-    cols = [col for col in cols if corr_count[col]>1]
+    cols = [col for col in cols if corr_count[col] > 1]
     corr = data[cols].corr()
 
     # Generate a mask for the upper triangle
@@ -169,12 +170,13 @@ def correlation_matrix(data, corr_seuil=0):
     sns.heatmap(corr, mask=mask, cmap=cmap, vmax=1, center=0,
                 square=True, linewidths=0.01, cbar_kws={"shrink": .5})
 
-def eta_squared(x,y):
+
+def eta_squared(x, y):
     """ Calcul état carré entre X et Y """
     moyenne_y = y.mean()
     classes = []
     for classe in x.unique():
-        yi_classe = y[x==classe]
+        yi_classe = y[x == classe]
         classes.append({'ni': len(yi_classe),
                         'moyenne_classe': yi_classe.mean()})
     SCT = sum([(yj-moyenne_y)**2 for yj in y])
@@ -182,67 +184,75 @@ def eta_squared(x,y):
     return SCE/SCT
 
 
-def ANOVA(data, X, Ys):    
+def ANOVA(data, X, Ys, sort=True):
     """ Analyse de la variance des variables en paramètres """
-    data = data.sort_values(X, ascending=False) #Ordonner le data set sur la catégorie permettra éventuellement de voir les possibles corrélations sur les graphiques
+    if sort:
+        # Ordonner le data set sur la catégorie permettra éventuellement de voir les possibles corrélations sur les graphiques
+        data = data.sort_values(X, ascending=False)
 
-    #Préparation de l'affichage des graphiques (boxplots, dispersions) des variables quantitatives Ys par rapport à la variable qualitative X
+    # Préparation de l'affichage des graphiques (boxplots, dispersions) des variables quantitatives Ys par rapport à la variable qualitative X
     lines = len(Ys)
     cols = 2
     index = 0
-    fig, axes = plt.subplots(lines, cols, figsize=(cols*12, lines*5), sharex=False, sharey=False)
-    fig.subplots_adjust(wspace=0.025, hspace=0.2) # ajuster l'espace entre les graphiques.     
-    meanprops = {'marker':'o', 'markeredgecolor':'black', 'markerfacecolor':'firebrick'} #Marquage des moyennes en rouge
+    fig, axes = plt.subplots(lines, cols, figsize=(
+        cols*12, lines*5), sharex=False, sharey=False)
+    # ajuster l'espace entre les graphiques.
+    fig.subplots_adjust(wspace=0.025, hspace=0.2)
+    meanprops = {'marker': 'o', 'markeredgecolor': 'black',
+                 'markerfacecolor': 'firebrick'}  # Marquage des moyennes en rouge
 
-    n2s = 0 #Somme des variances (état carré)
+    n2s = 0  # Somme des variances (état carré)
 
     # Affichages des graphiques pour chaque Y
-    for Y in Ys:        
-        #Calcul de la corrélation entre la variable qualitative X et la variable quantitaive Y
-        n2 = round(eta_squared(data[X],data[Y]),2)
+    for Y in Ys:
+        # Calcul de la corrélation entre la variable qualitative X et la variable quantitaive Y
+        n2 = round(eta_squared(data[X], data[Y]), 2)
         n2s += n2
 
-        index = Ys.index(Y)*cols+1 #Index des sous figures
+        index = Ys.index(Y)*cols+1  # Index des sous figures
 
-        # Afficher les dispersions        
-        ax = plt.subplot(lines,cols,index)
-        ax = sns.kdeplot(data=data, x=Y, hue=X)        
-        ax.set_title('n²=' + str(n2) + ' (' + force_mesure(n2, 'variance') + ')', x=1.1, loc='right') #Afficher et ajuster la position du titre des graphiques (valeur et type de la corrélation)
-        ax.set_xlabel(Y, fontsize = 16)
+        # Afficher les dispersions
+        ax = plt.subplot(lines, cols, index)
+        ax = sns.kdeplot(data=data, x=Y, hue=X)
+        # Afficher et ajuster la position du titre des graphiques (valeur et type de la corrélation)
+        ax.set_title('n²=' + str(n2) + ' (' + force_mesure(n2,
+                     'variance') + ')', x=1.1, loc='right')
+        ax.set_xlabel(Y, fontsize=16)
 
         index += 1
-        # Afficher les boxplots        
-        ax = plt.subplot(lines,cols,index)
-        ax = sns.boxplot(data=data, y=X, x=Y, showmeans=True, meanprops=meanprops, showfliers = False) #Afficher les moyennes et Cacher les outliers        
-        ax.set_xlabel(Y, fontsize = 16)
+        # Afficher les boxplots
+        ax = plt.subplot(lines, cols, index)
+        # Afficher les moyennes et Cacher les outliers
+        ax = sns.boxplot(data=data, y=X, x=Y, showmeans=True,
+                         meanprops=meanprops, showfliers=False)
+        ax.set_xlabel(Y, fontsize=16)
         ax.get_yaxis().set_label_position('right')
         ax.get_yaxis().tick_right()
 
-    
-    mu_n2s = round(n2s/lines,2) #moyenne des variances (variance moyenne)
-    fig.suptitle('Variance par ' + X + ' (n²=' + str(mu_n2s) +' ' + force_mesure(mu_n2s, 'variance moyenne') + ')', y=0.92, fontsize=24, horizontalalignment='center') # Titre globale de la figure
+    mu_n2s = round(n2s/lines, 2)  # moyenne des variances (variance moyenne)
+    fig.suptitle('Variance par ' + X + ' (n²=' + str(mu_n2s) + ' ' + force_mesure(mu_n2s, 'variance moyenne') + ')',
+                 y=0.92, fontsize=24, horizontalalignment='center')  # Titre globale de la figure
 
 
-
-def chi2 (data, X,Y):
-    c = data[[X,Y]].pivot_table(index=X,columns=Y,aggfunc=len)
+def chi2(data, X, Y):
+    c = data[[X, Y]].pivot_table(index=X, columns=Y, aggfunc=len)
     cont = c.copy()
 
     tx = data[X].value_counts()
     ty = data[Y].value_counts()
 
     n = len(data)
-    cont.loc[:,"Total"] = tx
-    cont.loc["total",:] = ty
-    cont.loc["total","Total"] = n
+    cont.loc[:, "Total"] = tx
+    cont.loc["total", :] = ty
+    cont.loc["total", "Total"] = n
     tx = pd.DataFrame(tx)
     ty = pd.DataFrame(ty)
     tx.columns = ["foo"]
     ty.columns = ["foo"]
-    
+
     indep = tx.dot(ty.T) / n
 
-    c = c.fillna(0) # on remplace les valeurs nulles par des 0
+    c = c.fillna(0)  # on remplace les valeurs nulles par des 0
     mesure = (c-indep)**2/indep
     xi_n = mesure.sum().sum()
-    sns.heatmap(mesure/xi_n,annot=c, cmap=sns.cm.rocket_r)
+    sns.heatmap(mesure/xi_n, annot=c, cmap=sns.cm.rocket_r)
