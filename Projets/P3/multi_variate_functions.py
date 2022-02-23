@@ -148,7 +148,7 @@ def PCA(data, cols, n_comp=5, alpha=1, annotation=None):
     data_pca = data_pca.fillna(data_pca.mean())
     X = data_pca.values
 
-    names = data["code"]  # ou data.index pour avoir les intitulés
+    names = data.index  # ou data.index pour avoir les intitulés
     features = data[cols].columns
 
     # Centrage et Réduction
@@ -172,9 +172,23 @@ def PCA(data, cols, n_comp=5, alpha=1, annotation=None):
     display_factorial_planes(X_projected, n_comp, pca,
                              Fs, alpha=alpha, annotation=data[annotation])
 
+    return pcs
     # nb_line = 1
     # nb_col = 3
     # height = 10
     # width = 30
     # fig, axes = plt.subplots(nb_line, nb_col, figsize=(
     #     width, height), sharex=False, sharey=False)
+
+
+def PCA_Compression(data, components, cols=None):
+    if cols == None:
+        cols = data.columns.tolist()
+
+    compressed_data = {}
+    for i in range(len(components)):
+        compressed_data['comp'+str(i+1)] = sum([data[cols[j]]
+                                                * components[i][j] for j in range(len(cols))])
+
+    compressed_data = pd.DataFrame(compressed_data, index=data.index)
+    return compressed_data
