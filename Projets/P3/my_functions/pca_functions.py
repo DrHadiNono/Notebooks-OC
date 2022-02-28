@@ -1,10 +1,11 @@
+from .common_functions import Std_Scaled
+from sklearn.impute import KNNImputer
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import numpy as np
 import pandas as pd
-from scipy.cluster.hierarchy import dendrogram
 from sklearn import decomposition
-from sklearn import preprocessing
+
 import seaborn as sns
 sns.set()  # Définir le style par défaut pour les graphiques
 
@@ -65,10 +66,13 @@ def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0,
             plt.show(block=False)
 
 
-def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, labels=None, alpha=1, annotation=None, illustrative_var=None):
-    # Generate a custom diverging colormap
-    # cmap = sns.diverging_palette(20, 230, as_cmap=True)
-    cmap = sns.color_palette("Spectral", as_cmap=True)
+def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, labels=None, alpha=1, continuous_illustrative_var=None, discrete_illustrative_var=None):
+    if continuous_illustrative_var is not None:
+        # Generate a custom diverging colormap
+        cmap = sns.color_palette('Spectral_r', as_cmap=True)
+
+    if discrete_illustrative_var is not None:
+        title = discrete_illustrative_var.name
 
     for (d1, d2) in axis_ranks:  # On affiche les n_comp/2 premiers plans factoriels,
         if d2 < n_comp:
@@ -76,16 +80,23 @@ def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, labels=None, 
             fig, ax = plt.subplots(figsize=(7, 6))
 
             # affichage des points
-            if illustrative_var is None:
+            if discrete_illustrative_var is None and continuous_illustrative_var is None:
                 plt.scatter(X_projected[:, d1],
-                            X_projected[:, d2], c=annotation, cmap=cmap, alpha=alpha)
-            else:
-                illustrative_var = np.array(illustrative_var)
-                for value in np.unique(illustrative_var):
-                    selected = np.where(illustrative_var == value)
+                            X_projected[:, d2], alpha=alpha)
+
+            if continuous_illustrative_var is not None:
+                plt.scatter(X_projected[:, d1],
+                            X_projected[:, d2], c=continuous_illustrative_var, cmap=cmap, alpha=alpha)
+                plt.colorbar(label=continuous_illustrative_var.name)
+
+            if discrete_illustrative_var is not None:
+                discrete_illustrative_var = np.array(
+                    discrete_illustrative_var)
+                for value in np.unique(discrete_illustrative_var):
+                    selected = np.where(discrete_illustrative_var == value)
                     plt.scatter(
-                        X_projected[selected, d1], X_projected[selected, d2], c=annotation, cmap=cmap, alpha=alpha, label=value)
-                plt.legend()
+                        X_projected[selected, d1], X_projected[selected, d2], alpha=alpha, label=value)
+                plt.legend(title=title)
 
             # affichage des labels des points
             if labels is not None:
@@ -124,19 +135,10 @@ def display_scree_plot(pca):
     plt.show(block=False)
 
 
-def plot_dendrogram(Z, names):
-    plt.figure(figsize=(10, 25))
-    plt.title('Hierarchical Clustering Dendrogram')
-    plt.xlabel('distance')
-    dendrogram(
-        Z,
-        labels=names,
-        orientation="left",
-    )
-    plt.show()
+def PCA(data, n_comp=5, cols=None, alpha=1, continuous_illustrative_var=None, discrete_illustrative_var=None, enable_display_scree_plot=True, enable_display_circles=True, enable_display_factorial_planes=True):
+    if cols is None:
+        cols = data.columns.tolist()
 
-
-def PCA(data, cols, n_comp=5, alpha=1, annotation=None):
     # choix du nombre de composantes à calculer
     n_comp = min(n_comp, len(cols))
     Fs = [(i, i+1) for i in range(0, n_comp, 2)]
@@ -144,51 +146,53 @@ def PCA(data, cols, n_comp=5, alpha=1, annotation=None):
     data_pca = data[cols]
 
     # préparation des données pour l'ACP
-    # Il est fréquent de remplacer les valeurs inconnues par la moyenne de la variable
-    data_pca = data_pca.fillna(data_pca.mean())
-    X = data_pca.values
+    # data_pca = data_pca.fillna(data_pca.mean())
 
+    knn_imputer = KNNImputer(n_neighbors=max(
+        10, int(len(data_pca)*0.1)), weights='distance')
+    knn_imputer_transfom = knn_imputer.fit_transform(data_pca)
+    data_pca = pd.DataFrame(knn_imputer_transfom,
+                            columns=data_pca.columns, index=data_pca.index)
+
+    X = data_pca.values
     names = data.index  # ou data.index pour avoir les intitulés
     features = data[cols].columns
 
     # Centrage et Réduction
-    std_scale = preprocessing.StandardScaler().fit(X)
-    X_scaled = std_scale.transform(X)
+    X_scaled = Std_Scaled(X)
 
     # Calcul des composantes principales
     pca = decomposition.PCA(n_components=n_comp)
     pca.fit(X_scaled)
 
-    # Eboulis des valeurs propres
-    display_scree_plot(pca)
+    if enable_display_scree_plot:
+        # Eboulis des valeurs propres
+        display_scree_plot(pca)
 
-    # Cercle des corrélations
     pcs = pca.components_
-    display_circles(pcs, n_comp, pca, Fs, labels=np.array(features))
+    if enable_display_circles:
+        # Cercle des corrélations
+        display_circles(pcs, n_comp, pca, Fs, labels=np.array(features))
 
-    # Projection des individus
-    X_projected = pca.transform(X_scaled)
-    # , labels = np.array(names))
+    if enable_display_factorial_planes:
+        # Projection des individus
+        X_projected = pca.transform(X_scaled)
+        # , labels = np.array(names))
+
     display_factorial_planes(X_projected, n_comp, pca,
-                             Fs, alpha=alpha, annotation=data[annotation])
+                             Fs, alpha=alpha, continuous_illustrative_var=continuous_illustrative_var, discrete_illustrative_var=discrete_illustrative_var)
 
     return pcs
-    # nb_line = 1
-    # nb_col = 3
-    # height = 10
-    # width = 30
-    # fig, axes = plt.subplots(nb_line, nb_col, figsize=(
-    #     width, height), sharex=False, sharey=False)
 
 
-def PCA_Compression(data, components, cols=None):
+def PCA_Compression(data, components, cols=None, prefix='comp'):
     if cols == None:
         cols = data.columns.tolist()
 
     compressed_data = {}
     for i in range(len(components)):
-        compressed_data['comp'+str(i+1)] = sum([data[cols[j]]
-                                                * components[i][j] for j in range(len(cols))])
+        compressed_data[prefix+str(i+1)] = sum([data[cols[j]]
+                                                * components[i][j] for j in range(len(components[i]))])
 
     compressed_data = pd.DataFrame(compressed_data, index=data.index)
     return compressed_data

@@ -1,5 +1,5 @@
 # Librairies pour le traitement des données
-from common_functions import *
+from .common_functions import *
 import pandas as pd
 import numpy as np
 import scipy.stats as st
@@ -149,13 +149,13 @@ def afficher_correlations(data, variables, categorie=None):
 def correlation_matrix(data, corr_seuil=0):
     # Compute the correlation matrix
     cols = colsOfType(data, ['int64', 'int32', 'float64', 'float32'])
-    corr = data[cols].corr()
+    corr = data[cols].corr()**2
 
     # Filter weak correlations
-    corr = corr[abs(corr) >= corr_seuil]
+    corr = corr[corr >= corr_seuil]
     corr_count = corr[corr.notna()].count()
     cols = [col for col in cols if corr_count[col] > 1]
-    corr = data[cols].corr()
+    corr = data[cols].corr()**2
 
     # Generate a mask for the upper triangle
     mask = np.triu(np.ones_like(corr, dtype=bool))

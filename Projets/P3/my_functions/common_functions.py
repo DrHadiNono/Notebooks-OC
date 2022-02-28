@@ -2,6 +2,8 @@
 import pandas as pd
 import numpy as np
 
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+
 # Librairies pour la visualisation de graphiques
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -70,3 +72,33 @@ def colsOfType(data, types):
         if (type in types):
             cols.append(col_name)
     return cols
+
+
+# ============================ Scalers ======================================
+
+def scaled(data, scaler, frame=False, return_scaler=False):
+    scaler = scaler
+    scaled_data = scaler.fit_transform(data)
+
+    res = scaled_data
+    if frame:
+        res = pd.DataFrame(scaled_data, columns=data.columns, index=data.index)
+
+    if return_scaler:
+        return res, scaler
+    else:
+        return res
+
+
+def reverse_scaled_frame(scaled_data, scaler):
+    return pd.DataFrame(scaler.inverse_transform(scaled_data.values), columns=scaled_data.columns, index=scaled_data.index)
+
+
+def MinMax_Scaled(data, frame=False, return_scaler=False):
+    return scaled(data, MinMaxScaler(), frame, return_scaler)
+
+
+def Std_Scaled(data, frame=False, return_scaler=False):
+    return scaled(data, StandardScaler(), frame, return_scaler)
+
+# ============================================================================
