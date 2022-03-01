@@ -1,13 +1,9 @@
-from .common_functions import Std_Scaled
+from .common_functions import *
+
 from sklearn.impute import KNNImputer
-import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
-import numpy as np
-import pandas as pd
 from sklearn import decomposition
 
-import seaborn as sns
-sns.set()  # Définir le style par défaut pour les graphiques
+from matplotlib.collections import LineCollection
 
 
 def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0, lims=None):
@@ -30,7 +26,7 @@ def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0,
             if pcs.shape[1] < 30:
                 plt.quiver(np.zeros(pcs.shape[1]), np.zeros(pcs.shape[1]),
                            pcs[d1, :], pcs[d2, :],
-                           angles='xy', scale_units='xy', scale=1, color="grey")
+                           angles='xy', scale_units='xy', scale=1, color='grey')
                 # (voir la doc : https://matplotlib.org/api/_as_gen/matplotlib.pyplot.quiver.html)
             else:
                 lines = [[[0, 0], [x, y]] for x, y in pcs[[d1, d2]].T]
@@ -42,7 +38,7 @@ def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0,
                 for i, (x, y) in enumerate(pcs[[d1, d2]].T):
                     if x >= xmin and x <= xmax and y >= ymin and y <= ymax:
                         plt.text(x, y, labels[i], fontsize='14', ha='center',
-                                 va='center', rotation=label_rotation, color="blue", alpha=0.5)
+                                 va='center', rotation=label_rotation, color='blue', alpha=0.5)
 
             # affichage du cercle
             circle = plt.Circle((0, 0), 1, facecolor='none', edgecolor='b')
@@ -62,7 +58,7 @@ def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0,
             plt.ylabel('F{} ({}%)'.format(
                 d2+1, round(100*pca.explained_variance_ratio_[d2], 1)))
 
-            plt.title("Cercle des corrélations (F{} et F{})".format(d1+1, d2+1))
+            plt.title('Cercle des corrélations (F{} et F{})'.format(d1+1, d2+1))
             plt.show(block=False)
 
 
@@ -121,17 +117,17 @@ def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, labels=None, 
                 d2+1, round(100*pca.explained_variance_ratio_[d2], 1)))
 
             plt.title(
-                "Projection des individus (sur F{} et F{})".format(d1+1, d2+1))
+                'Projection des individus (sur F{} et F{})'.format(d1+1, d2+1))
             plt.show(block=False)
 
 
 def display_scree_plot(pca):
     scree = pca.explained_variance_ratio_*100
     plt.bar(np.arange(len(scree))+1, scree)
-    plt.plot(np.arange(len(scree))+1, scree.cumsum(), c="red", marker='o')
+    plt.plot(np.arange(len(scree))+1, scree.cumsum(), c='red', marker='o')
     plt.xlabel("rang de l'axe d'inertie")
     plt.ylabel("pourcentage d'inertie")
-    plt.title("Eboulis des valeurs propres")
+    plt.title('Eboulis des valeurs propres')
     plt.show(block=False)
 
 

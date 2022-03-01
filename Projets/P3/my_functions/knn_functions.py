@@ -1,5 +1,5 @@
-from sklearn import neighbors
 from .machine_learning_common_functions import trainning_sets
+from sklearn import neighbors
 import matplotlib.pyplot as plt
 
 

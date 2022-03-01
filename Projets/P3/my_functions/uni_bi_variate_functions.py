@@ -1,16 +1,8 @@
-# Librairies pour le traitement des données
 from .common_functions import *
-import pandas as pd
-import numpy as np
 import scipy.stats as st
 
-# Librairies pour la visualisation de graphiques
-import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set()  # Définir le style par défaut pour les graphiques
 
-
-def histo_distribution(data, horizontal=True):
+def histo_distribution(data, horizontal=False):
     continues = colsOfType(data, ['float32', 'float64'])
     quantitatives = continues + colsOfType(data, ['int32', 'int64'])
 
@@ -37,9 +29,10 @@ def histo_distribution(data, horizontal=True):
     else:
         nb_line = nb_quantitaves
         nb_col = 3
-        width = 3*8
-        height = nb_quantitaves*5
+        width = 3*6
+        height = nb_quantitaves*3
         wspace = 0.025
+        hspace = 0.3
 
     # Préparation de l'affichage des graphiques sur deux colonnes : une pour les histogrammes et une pour les boxplots
     fig, axes = plt.subplots(nb_line, nb_col, figsize=(
@@ -61,7 +54,7 @@ def histo_distribution(data, horizontal=True):
         ax = axes[index, i] if horizontal else axes[i, index]
         # Soustitre de colonne
         if i == 0 or horizontal:
-            ax.set_title("histogramme", loc='center', y=1, fontsize=18)
+            ax.set_title('histogramme', loc='center', y=1, fontsize=18)
         # Ajuster les classes des variables selon leurs types (continues ou discrètes) :
         bins = 'auto' if quantitatives[i] not in continues else 10
         sns.histplot(data_quantitative, ax=ax,
@@ -74,12 +67,12 @@ def histo_distribution(data, horizontal=True):
         ax = axes[index, i] if horizontal else axes[i, index]
         # Soustitre de colonne
         if i == 0 or horizontal:
-            ax.set_title("boxplot avec outliers",
+            ax.set_title('boxplot avec outliers',
                          loc='center', y=1, fontsize=18)
         sns.boxplot(x=data_quantitative, ax=ax, color=colors[i % len(colors)], orient='h', width=.3, showmeans=True,
                     meanprops=meanprops, showfliers=True)  # afficher avec outliers
         if not horizontal:
-            ax.set_xlabel(quantitatives[i], fontsize=20)
+            ax.set_xlabel(quantitatives[i], fontsize=14, labelpad=1.)
         else:
             ax.set_xlabel('')
 
@@ -88,7 +81,7 @@ def histo_distribution(data, horizontal=True):
         ax = axes[index, i] if horizontal else axes[i, index]
         # Soustitre de colonne
         if i == 0 or horizontal:
-            ax.set_title("boxplot sans outliers",
+            ax.set_title('boxplot sans outliers',
                          loc='center', y=1, fontsize=18)
         sns.boxplot(x=data_quantitative, ax=ax, color=colors[i % len(colors)], orient='h', width=.3, showmeans=True,
                     meanprops=meanprops, showfliers=False)  # afficher sans outliers
@@ -99,7 +92,7 @@ def histo_distribution(data, horizontal=True):
 
 
 def force_mesure(mesure, type):
-    """ Renvoie un texte avec la force de la mesure selon les seuils """
+    ''' Renvoie un texte avec la force de la mesure selon les seuils '''
     force_text = ''
 
     # Définition des seuils/intervalles de mesure
@@ -114,7 +107,7 @@ def force_mesure(mesure, type):
 
 
 def afficher_correlations(data, variables, categorie=None):
-    """ Calcul et affichage des corrélations linéaires entre les 'variables' """
+    ''' Calcul et affichage des corrélations linéaires entre les 'variables' '''
     # Calcul des corrélations
     data = data[(variables+[categorie] if categorie !=
                  None else variables)].copy()
@@ -146,7 +139,7 @@ def afficher_correlations(data, variables, categorie=None):
                          'corrélation') + ')', y=0.99, loc='left')
 
 
-def correlation_matrix(data, corr_seuil=0):
+def correlation_matrix(data, corr_seuil=0, sort=False):
     # Compute the correlation matrix
     cols = colsOfType(data, ['int64', 'int32', 'float64', 'float32'])
     corr = data[cols].corr()**2
@@ -156,6 +149,9 @@ def correlation_matrix(data, corr_seuil=0):
     corr_count = corr[corr.notna()].count()
     cols = [col for col in cols if corr_count[col] > 1]
     corr = data[cols].corr()**2
+    corr = corr[corr >= corr_seuil]
+    if sort:
+        corr = corr.sort_index(axis=0).sort_index(axis=1)
 
     # Generate a mask for the upper triangle
     mask = np.triu(np.ones_like(corr, dtype=bool))
@@ -168,11 +164,11 @@ def correlation_matrix(data, corr_seuil=0):
 
     # Draw the heatmap with the mask and correct aspect ratio
     sns.heatmap(corr, mask=mask, cmap=cmap, vmax=1, center=0,
-                square=True, linewidths=0.01, cbar_kws={"shrink": .5})
+                square=True, linewidths=0.01, cbar_kws={'shrink': .5, 'label': 'Pearson Correlation (r²)'})
 
 
 def eta_squared(x, y):
-    """ Calcul état carré entre X et Y """
+    ''' Calcul état carré entre X et Y '''
     moyenne_y = y.mean()
     classes = []
     for classe in x.unique():
@@ -185,7 +181,7 @@ def eta_squared(x, y):
 
 
 def ANOVA(data, X, Ys, sort=True):
-    """ Analyse de la variance des variables en paramètres """
+    ''' Analyse de la variance des variables en paramètres '''
     if sort:
         # Ordonner le data set sur la catégorie permettra éventuellement de voir les possibles corrélations sur les graphiques
         data = data.sort_values(X, ascending=False)
@@ -242,13 +238,13 @@ def chi2(data, X, Y):
     ty = data[Y].value_counts()
 
     n = len(data)
-    cont.loc[:, "Total"] = tx
-    cont.loc["total", :] = ty
-    cont.loc["total", "Total"] = n
+    cont.loc[:, 'Total'] = tx
+    cont.loc['total', :] = ty
+    cont.loc['total', 'Total'] = n
     tx = pd.DataFrame(tx)
     ty = pd.DataFrame(ty)
-    tx.columns = ["foo"]
-    ty.columns = ["foo"]
+    tx.columns = ['foo']
+    ty.columns = ['foo']
 
     indep = tx.dot(ty.T) / n
 

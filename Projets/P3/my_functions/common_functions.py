@@ -1,17 +1,17 @@
 # Librairies pour le traitement des données
-import pandas as pd
-import numpy as np
-
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
-
-# Librairies pour la visualisation de graphiques
-import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+import numpy as np
+import pandas as pd
+
+pd.set_option('display.max_columns', None)
+# Librairies pour la visualisation de graphiques
 sns.set()  # Définir le style par défaut pour les graphiques
 
 
-def verifier_taille(data, dask=True):
-    """ Fonction de vérification de la taille d'un data set """
+def verifier_taille(data, dask=False):
+    ''' Fonction de vérification de la taille d'un data set '''
     lignes = data.shape[0]
     if dask:
         lignes = lignes.compute()
@@ -37,13 +37,13 @@ def verifier_taille(data, dask=True):
 
 
 def afficher_echantillon(data, n=2):
-    """ Afficher un sous-échantillon aléatoire """
+    ''' Afficher un sous-échantillon aléatoire '''
     print('Voici un sous-échantillon aléatoire :')
     return data.sample(frac=0.002, random_state=np.random.seed()).head(n)
 
 
 def valeurs_manquantes(data):
-    """ Retourner les valeurs manquantes d'un data frame/set """
+    ''' Retourner les valeurs manquantes d'un data frame/set '''
     return data[data.isnull().any(axis=1)]
 
 

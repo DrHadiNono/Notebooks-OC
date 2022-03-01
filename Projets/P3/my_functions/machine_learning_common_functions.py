@@ -11,7 +11,7 @@ def plot_dendrogram(Z, names):
     dendrogram(
         Z,
         labels=names,
-        orientation="left",
+        orientation='left',
     )
     plt.show()
 
