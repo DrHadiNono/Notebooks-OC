@@ -139,22 +139,30 @@ def afficher_correlations(data, variables, categorie=None):
                          'corrélation') + ')', y=0.99, loc='left')
 
 
-def correlation_matrix(data, corr_seuil=0, sort=False):
+def correlation_matrix(data, corr_seuil=0, squared=True, triangle=True, sort=False):
     # Compute the correlation matrix
     cols = colsOfType(data, ['int64', 'int32', 'float64', 'float32'])
-    corr = data[cols].corr()**2
+    corr = data[cols].corr()
+    if squared:
+        corr = corr**2
 
     # Filter weak correlations
-    corr = corr[corr >= corr_seuil]
+    corr = corr[abs(corr) >= corr_seuil]
     corr_count = corr[corr.notna()].count()
     cols = [col for col in cols if corr_count[col] > 1]
-    corr = data[cols].corr()**2
-    corr = corr[corr >= corr_seuil]
+    corr = data[cols].corr()
+
+    if squared:
+        corr = corr**2
+    corr = corr[abs(corr) >= corr_seuil]
+
     if sort:
         corr = corr.sort_index(axis=0).sort_index(axis=1)
 
-    # Generate a mask for the upper triangle
-    mask = np.triu(np.ones_like(corr, dtype=bool))
+    mask = None
+    if triangle:
+        # Generate a mask for the upper triangle
+        mask = np.triu(np.ones_like(corr, dtype=bool))
 
     # Set up the matplotlib figure
     f, ax = plt.subplots(figsize=(max(11, len(cols)/3), max(9, len(cols)/3)))
@@ -164,7 +172,9 @@ def correlation_matrix(data, corr_seuil=0, sort=False):
 
     # Draw the heatmap with the mask and correct aspect ratio
     sns.heatmap(corr, mask=mask, cmap=cmap, vmax=1, center=0,
-                square=True, linewidths=0.01, cbar_kws={'shrink': .5, 'label': 'Pearson Correlation (r²)'})
+                square=True, linewidths=0.01, cbar_kws={'shrink': .5, 'label': 'Pearson Correlation (r'+('²' if squared else '')+')'})
+
+    plt.show()
 
 
 def eta_squared(x, y):
