@@ -29,9 +29,9 @@ def verifier_taille(data, dask=False):
           round(taille_null, 2), '% du data set.')
 
     # Afficher la répartition du taux de valeurs manquantes
-    nan_data = pd.DataFrame({'valeurs (%)': [''], 'non-null('+str(round(taille_non_null, 2))+'%)': [
+    nan_data = pd.DataFrame({'valeurs': [''], 'non-null('+str(round(taille_non_null, 2))+'%)': [
                             taille_non_null], 'null('+str(round(taille_null, 2))+'%)': [taille_null]})
-    nan_data.set_index('valeurs (%)').plot(kind='barh', stacked=True, color=[
+    nan_data.set_index('valeurs').plot(kind='barh', stacked=True, color=[
         'green', 'orange'], figsize=(8, 2), fontsize=12)
     plt.xlabel('%')
 
@@ -49,18 +49,18 @@ def valeurs_manquantes(data):
 
 def nan_cols(data, nan_seuil=0):
     n = len(data)
-    dict_info = {'Column': [], 'NaN_Count': [], 'NaN_Percent': [],
-                 'Not_NaN_Count': [], 'Not_NaN_Percent': [], }
+    dict_info = {'Column': [], '#NaN': [], '%NaN': [],
+                 '#Not_NaN': [], '%Not_NaN': [], }
 
     for col in data.columns:
         nan_count = data[col].isnull().sum()
         nan_percent = 100*nan_count/n
         if nan_percent >= nan_seuil:
             dict_info['Column'].append(col)
-            dict_info['NaN_Count'].append(nan_count)
-            dict_info['NaN_Percent'].append(nan_percent)
-            dict_info['Not_NaN_Count'].append(n-nan_count)
-            dict_info['Not_NaN_Percent'].append(100*(n-nan_count)/n)
+            dict_info['#NaN'].append(nan_count)
+            dict_info['%NaN'].append(round(nan_percent, 2))
+            dict_info['#Not_NaN'].append(n-nan_count)
+            dict_info['%Not_NaN'].append(round(100*(n-nan_count)/n, 2))
 
     return pd.DataFrame(dict_info)
 

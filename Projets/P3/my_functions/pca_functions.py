@@ -142,13 +142,12 @@ def PCA(data, n_comp=5, cols=None, alpha=1, continuous_illustrative_var=None, di
     data_pca = data[cols]
 
     # préparation des données pour l'ACP
-    # data_pca = data_pca.fillna(data_pca.mean())
-
-    knn_imputer = KNNImputer(n_neighbors=max(
-        10, int(len(data_pca)*0.1)), weights='distance')
-    knn_imputer_transfom = knn_imputer.fit_transform(data_pca)
-    data_pca = pd.DataFrame(knn_imputer_transfom,
-                            columns=data_pca.columns, index=data_pca.index)
+    if data_pca.isnull().sum().sum() > 0:
+        knn_imputer = KNNImputer(n_neighbors=max(
+            10, int(len(data_pca)*0.1)), weights='distance')
+        knn_imputer_transfom = knn_imputer.fit_transform(data_pca)
+        data_pca = pd.DataFrame(knn_imputer_transfom,
+                                columns=data_pca.columns, index=data_pca.index)
 
     X = data_pca.values
     names = data.index  # ou data.index pour avoir les intitulés

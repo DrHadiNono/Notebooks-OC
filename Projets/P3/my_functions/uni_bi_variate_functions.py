@@ -51,7 +51,10 @@ def histo_distribution(data, horizontal=False):
 
         # Afficher les histogrammes sur la première colonne
         index += 1
-        ax = axes[index, i] if horizontal else axes[i, index]
+        if nb_quantitaves == 1:
+            ax = axes[index]
+        else:
+            ax = axes[index, i] if horizontal else axes[i, index]
         # Soustitre de colonne
         if i == 0 or horizontal:
             ax.set_title('histogramme', loc='center', y=1, fontsize=18)
@@ -64,7 +67,10 @@ def histo_distribution(data, horizontal=False):
 
         # Afficher les boxplots sans outliers sur la deuxième colonne
         index += 1
-        ax = axes[index, i] if horizontal else axes[i, index]
+        if nb_quantitaves == 1:
+            ax = axes[index]
+        else:
+            ax = axes[index, i] if horizontal else axes[i, index]
         # Soustitre de colonne
         if i == 0 or horizontal:
             ax.set_title('boxplot avec outliers',
@@ -78,7 +84,10 @@ def histo_distribution(data, horizontal=False):
 
         # Afficher les boxplots avec outliers sur la deuxième colonne
         index += 1
-        ax = axes[index, i] if horizontal else axes[i, index]
+        if nb_quantitaves == 1:
+            ax = axes[index]
+        else:
+            ax = axes[index, i] if horizontal else axes[i, index]
         # Soustitre de colonne
         if i == 0 or horizontal:
             ax.set_title('boxplot sans outliers',

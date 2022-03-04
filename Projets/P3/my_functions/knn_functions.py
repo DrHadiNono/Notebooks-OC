@@ -7,7 +7,8 @@ def knn_train(data, Y, k=10, sampling_factor=1):
     # Data Split 5 Trainning sets
     xtrain, xtest, ytrain, ytest = trainning_sets(data, Y, sampling_factor)
     # K-NN
-    knn = neighbors.KNeighborsRegressor(n_neighbors=k, weights='distance')
+    knn = neighbors.KNeighborsRegressor(
+        n_neighbors=k, weights='distance', n_jobs=-1)
     knn.fit(xtrain, ytrain)
     error = 100*(1 - knn.score(xtest, ytest))
     return knn, error
@@ -29,6 +30,9 @@ def best_knn(data, Y, k=(2, 30), sampling_factor=1, repeat_factor=10):
                 best_knn = knn[0]
         errors.append(min(local_errors))
     plt.plot(range(kmin, kmax), errors, 'o-')
+    plt.title('K-NN MSE')
+    plt.xlabel('K')
+    plt.ylabel('MSE(%)')
     plt.show()
 
     return errors.index(min(errors))+kmin, min(errors), best_knn, errors, range(kmin, kmax)
