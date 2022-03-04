@@ -173,9 +173,8 @@ def PCA(data, n_comp=5, cols=None, alpha=1, continuous_illustrative_var=None, di
         # Projection des individus
         X_projected = pca.transform(X_scaled)
         # , labels = np.array(names))
-
-    display_factorial_planes(X_projected, n_comp, pca,
-                             Fs, alpha=alpha, continuous_illustrative_var=continuous_illustrative_var, discrete_illustrative_var=discrete_illustrative_var)
+        display_factorial_planes(X_projected, n_comp, pca,
+                                 Fs, alpha=alpha, continuous_illustrative_var=continuous_illustrative_var, discrete_illustrative_var=discrete_illustrative_var)
 
     return pcs
 
