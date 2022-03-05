@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import numpy as np
 import pandas as pd
+import re
 
 pd.set_option('display.max_columns', None)
 # Librairies pour la visualisation de graphiques
@@ -69,7 +70,7 @@ def colsOfType(data, types):
     cols = []
     dtypes = data.dtypes.to_dict()
     for col_name, type in dtypes.items():
-        if (type in types):
+        if (re.split('\d+', str(type))[0] in types):
             cols.append(col_name)
     return cols
 

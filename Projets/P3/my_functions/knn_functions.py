@@ -3,18 +3,22 @@ from sklearn import neighbors
 import matplotlib.pyplot as plt
 
 
-def knn_train(data, Y, k=10, sampling_factor=1):
+def knn_train(data, Y, k=10, regression=False, sampling_factor=1):
     # Data Split 5 Trainning sets
     xtrain, xtest, ytrain, ytest = trainning_sets(data, Y, sampling_factor)
     # K-NN
-    knn = neighbors.KNeighborsRegressor(
+    knn = neighbors.KNeighborsClassifier(
         n_neighbors=k, weights='distance', n_jobs=-1)
+    if regression:
+        knn = neighbors.KNeighborsRegressor(
+            n_neighbors=k, weights='distance', n_jobs=-1)
+
     knn.fit(xtrain, ytrain)
     error = 100*(1 - knn.score(xtest, ytest))
     return knn, error
 
 
-def best_knn(data, Y, k=(2, 30), sampling_factor=1, repeat_factor=10):
+def best_knn(data, Y, k=(2, 30), regression=False, sampling_factor=1, repeat_factor=10):
     errors = []
     best_knn = None
     best_error = None
@@ -23,7 +27,7 @@ def best_knn(data, Y, k=(2, 30), sampling_factor=1, repeat_factor=10):
     for k in range(kmin, kmax):
         local_errors = []
         for i in range(repeat_factor):
-            knn = knn_train(data, Y, k, sampling_factor)
+            knn = knn_train(data, Y, k, regression, sampling_factor)
             local_errors.append(knn[1])
             if best_error == None or knn[1] < best_error:
                 best_error = knn[1]

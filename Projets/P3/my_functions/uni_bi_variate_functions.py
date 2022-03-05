@@ -3,8 +3,8 @@ import scipy.stats as st
 
 
 def histo_distribution(data, horizontal=False):
-    continues = colsOfType(data, ['float32', 'float64'])
-    quantitatives = continues + colsOfType(data, ['int32', 'int64'])
+    continues = colsOfType(data, ['float'])
+    quantitatives = continues + colsOfType(data, ['int'])
 
     # Nombre de variables quantitatives
     nb_quantitaves = len(quantitatives)
@@ -150,7 +150,7 @@ def afficher_correlations(data, variables, categorie=None):
 
 def correlation_matrix(data, corr_seuil=0, squared=True, triangle=True, sort=False):
     # Compute the correlation matrix
-    cols = colsOfType(data, ['int64', 'int32', 'float64', 'float32'])
+    cols = colsOfType(data, ['int', 'float'])
     corr = data[cols].corr()
     if squared:
         corr = corr**2

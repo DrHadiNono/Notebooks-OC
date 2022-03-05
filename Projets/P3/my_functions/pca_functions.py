@@ -65,7 +65,7 @@ def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0,
 def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, labels=None, alpha=1, continuous_illustrative_var=None, discrete_illustrative_var=None):
     if continuous_illustrative_var is not None:
         # Generate a custom diverging colormap
-        cmap = sns.color_palette('Spectral_r', as_cmap=True)
+        cmap = sns.color_palette('RdYlGn_r', as_cmap=True)
 
     if discrete_illustrative_var is not None:
         title = discrete_illustrative_var.name
