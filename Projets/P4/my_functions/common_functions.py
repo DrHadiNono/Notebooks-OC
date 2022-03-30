@@ -82,6 +82,10 @@ def colsOfType(data, types):
     return cols
 
 
+def renameCol(data, old_col, new_col):
+    return data.rename(columns={old_col: new_col})
+
+
 # ============================ Scalers ======================================
 # Fonctions de normalisations
 
