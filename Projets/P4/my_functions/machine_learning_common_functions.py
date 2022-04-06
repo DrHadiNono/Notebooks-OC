@@ -46,10 +46,10 @@ def trainning_sets(data, Y, train_size=0.8, random_state=None, shuffle=True, sam
 
     # Data Scaling. Training and Test sets scaled one after another to avoid data leakage
     if scale == 'std':
-        xtrain = Std_Scaled(xtrain)
-        xtest = Std_Scaled(xtest)
+        xtrain= Std_Scaled(xtrain)
+        xtest= Std_Scaled(xtest)
     elif scale == 'min-max':
-        xtrain = MinMax_Scaled(xtrain)
-        xtest = MinMax_Scaled(xtest)
+        xtrain= MinMax_Scaled(xtrain)
+        xtest= MinMax_Scaled(xtest)
 
     return xtrain, xtest, ytrain, ytest
