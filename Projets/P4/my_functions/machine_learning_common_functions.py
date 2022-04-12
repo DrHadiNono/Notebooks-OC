@@ -1,6 +1,6 @@
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.model_selection import train_test_split
-from my_functions.common_functions import MinMax_Scaled, Std_Scaled
+from my_functions.common_functions import MinMax_Scaled, Std_Scaled, Robust_Scaled, PowerTransformer_Scaled
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -37,6 +37,10 @@ def trainning_sets(data, Y, train_size=0.8, random_state=None, shuffle=True, sam
             Y = Std_Scaled(Y)[:, 0]
         if scale == 'min-max':
             Y = MinMax_Scaled(Y)[:, 0]
+        if scale == 'robust':
+            Y = Robust_Scaled(Y)[:, 0]
+        if scale == 'power':
+            Y = PowerTransformer_Scaled(Y)[:, 0]
     else:
         Y = data[Y].values
 
@@ -48,8 +52,14 @@ def trainning_sets(data, Y, train_size=0.8, random_state=None, shuffle=True, sam
     if scale == 'std':
         xtrain= Std_Scaled(xtrain)
         xtest= Std_Scaled(xtest)
-    elif scale == 'min-max':
+    if scale == 'min-max':
         xtrain= MinMax_Scaled(xtrain)
         xtest= MinMax_Scaled(xtest)
+    if scale == 'robust':
+        xtrain= Robust_Scaled(xtrain)
+        xtest= Robust_Scaled(xtest)
+    if scale == 'power':
+        xtrain= PowerTransformer_Scaled(xtrain)
+        xtest= PowerTransformer_Scaled(xtest)
 
     return xtrain, xtest, ytrain, ytest

@@ -1,7 +1,7 @@
 # Librairies pour le traitement des données
 import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler, PowerTransformer
 import numpy as np
 import pandas as pd
 import re
@@ -9,6 +9,7 @@ import re
 pd.set_option('display.max_columns', None)
 # Librairies pour la visualisation de graphiques
 sns.set()  # Définir le style par défaut pour les graphiques
+sns.set_style("whitegrid", {"grid.color": ".6", "grid.linestyle": ":"})
 
 
 def verifier_taille(data, dask=False):
@@ -72,9 +73,11 @@ def nan_cols(data, nan_seuil=0):
     return pd.DataFrame(dict_info)
 
 
-def colsOfType(data, types):
+def colsOfType(data, types=None):
     ''' Retourne la liste de colonnes dont le type est dans "TYPES" '''
     cols = []
+    if types == None:
+        types = ['int', 'float']
     dtypes = data.dtypes.to_dict()
     for col_name, type in dtypes.items():
         if (re.split('\d+', str(type))[0] in types):
@@ -113,5 +116,11 @@ def MinMax_Scaled(data, frame=False, return_scaler=False):
 
 def Std_Scaled(data, frame=False, return_scaler=False):
     return scaled(data, StandardScaler(), frame, return_scaler)
+
+def Robust_Scaled(data, frame=False, return_scaler=False):
+    return scaled(data, RobustScaler(), frame, return_scaler)
+
+def PowerTransformer_Scaled(data, frame=False, return_scaler=False):
+    return scaled(data, PowerTransformer(), frame, return_scaler)
 
 # ============================================================================

@@ -118,6 +118,9 @@ def force_mesure(mesure, type):
 
 def afficher_correlations(data, variables, categorie=None):
     ''' Calcul et affichage des corrélations linéaires entre les 'variables' '''
+    # Garder uniquement les variables numériques
+    variables = colsOfType(data[variables])
+
     # Calcul des corrélations
     data = data[(variables+[categorie] if categorie !=
                  None else variables)].copy()
@@ -131,7 +134,7 @@ def afficher_correlations(data, variables, categorie=None):
                    fontsize=24, horizontalalignment='center')  # Titre globale de la figure
 
     # Afficher sur la diagonale les dispersions, par rapport à la catégorie si donnée
-    g.map_diag(sns.kdeplot, fill=True)
+    g.map_diag(sns.kdeplot, fill=True, warn_singular=False)
 
     # Afficher ailleurs les scatter plots avec les régressions linéaires, par rapport à la catégorie si donnée
     g.map_offdiag(sns.regplot, scatter=False, ci=None)
@@ -152,7 +155,7 @@ def afficher_correlations(data, variables, categorie=None):
 def correlation_matrix(data, corr_seuil=0, squared=True, triangle=True, sort=False):
     ''' Calcul et affiche la matrice heatmap dezs corrélations de Pearson entre les colonnes '''
     # Compute the correlation matrix
-    cols = colsOfType(data, ['int', 'float'])
+    cols = colsOfType(data)
     corr = data[cols].corr()
     if squared:
         corr = corr**2
@@ -201,15 +204,20 @@ def eta_squared(x, y):
     return SCE/SCT
 
 
-def ANOVA(data, X, Ys, sort=True):
+def ANOVA(data, X, Ys=None, sort=True, display_kde=True):
     ''' Analyse de la variance des variables en paramètres '''
     if sort:
         # Ordonner le data set sur la catégorie permettra éventuellement de voir les possibles corrélations sur les graphiques
         data = data.sort_values(X, ascending=False)
+    #Récupérer ou garder uniquement les colonnes numériques
+    if Ys == None:
+        Ys = colsOfType(data)
+    else:
+        Ys = colsOfType(data[Ys])
 
     # Préparation de l'affichage des graphiques (boxplots, dispersions) des variables quantitatives Ys par rapport à la variable qualitative X
     lines = len(Ys)
-    cols = 2
+    cols = 2 if display_kde else 1
     index = 0
     fig, axes = plt.subplots(lines, cols, figsize=(
         cols*12, lines*5), sharex=False, sharey=False)
@@ -222,21 +230,16 @@ def ANOVA(data, X, Ys, sort=True):
 
     # Affichages des graphiques pour chaque Y
     for Y in Ys:
-        # Calcul de la corrélation entre la variable qualitative X et la variable quantitaive Y
-        n2 = round(eta_squared(data[X], data[Y]), 2)
-        n2s += n2
-
         index = Ys.index(Y)*cols+1  # Index des sous figures
 
-        # Afficher les dispersions
-        ax = plt.subplot(lines, cols, index)
-        ax = sns.kdeplot(data=data, x=Y, hue=X)
-        # Afficher et ajuster la position du titre des graphiques (valeur et type de la corrélation)
-        ax.set_title('n²=' + str(n2) + ' (' + force_mesure(n2,
-                     'variance') + ')', x=1.1, loc='right')
-        ax.set_xlabel(Y, fontsize=16)
+        if display_kde:
+            # Afficher les dispersions
+            ax = plt.subplot(lines, cols, index)
+            ax = sns.kdeplot(data=data, x=Y, hue=X,
+                             warn_singular=False, legend=None)
+            ax.set_xlabel(Y, fontsize=16)
+            index += 1
 
-        index += 1
         # Afficher les boxplots
         ax = plt.subplot(lines, cols, index)
         # Afficher les moyennes et Cacher les outliers
@@ -246,9 +249,16 @@ def ANOVA(data, X, Ys, sort=True):
         ax.get_yaxis().set_label_position('right')
         ax.get_yaxis().tick_right()
 
+        # Calcul de la corrélation entre la variable qualitative X et la variable quantitaive Y
+        n2 = round(eta_squared(data[X], data[Y]), 2)
+        n2s += n2
+        # Afficher et ajuster la position du titre des graphiques (valeur et type de la corrélation)
+        ax.set_title('n²=' + str(n2) + ' (' + force_mesure(n2,
+                     'variance') + ')', x=-.1 if display_kde else .4, y=0.985, loc='left')
+
     mu_n2s = round(n2s/lines, 2)  # moyenne des variances (variance moyenne)
     fig.suptitle('Variance par ' + X + ' (n²=' + str(mu_n2s) + ' ' + force_mesure(mu_n2s, 'variance moyenne') + ')',
-                 y=0.92, fontsize=24, horizontalalignment='center')  # Titre globale de la figure
+                 x=0.5 if display_kde else 0.6, y=0.93, fontsize=24, horizontalalignment='center')  # Titre globale de la figure
 
 
 def chi2(data, X, Y):
