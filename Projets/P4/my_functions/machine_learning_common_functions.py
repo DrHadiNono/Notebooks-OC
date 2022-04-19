@@ -1,8 +1,13 @@
-from scipy.cluster.hierarchy import dendrogram
 from sklearn.model_selection import train_test_split
-from my_functions.common_functions import MinMax_Scaled, Std_Scaled, Robust_Scaled, PowerTransformer_Scaled
-import numpy as np
-import matplotlib.pyplot as plt
+from sklearn import metrics, dummy
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.inspection import permutation_importance
+from scipy.cluster.hierarchy import dendrogram
+
+from my_functions.common_functions import *
+from matplotlib import cm
+
+import timeit
 
 
 def plot_dendrogram(Z, names):
@@ -26,7 +31,8 @@ def trainning_sets(data, Y, train_size=0.8, random_state=None, shuffle=True, sam
         sample = np.random.randint(data_size, size=sample_size)
         data = data.iloc[sample]
 
-    cols = [col for col in data.columns.tolist() if col != Y]
+    cols = data.columns.tolist()
+    cols.remove(Y)
 
     X = data[cols]
     Ycol = Y
@@ -50,16 +56,130 @@ def trainning_sets(data, Y, train_size=0.8, random_state=None, shuffle=True, sam
 
     # Data Scaling. Training and Test sets scaled one after another to avoid data leakage
     if scale == 'std':
-        xtrain= Std_Scaled(xtrain)
-        xtest= Std_Scaled(xtest)
+        xtrain = Std_Scaled(xtrain)
+        xtest = Std_Scaled(xtest)
     if scale == 'min-max':
-        xtrain= MinMax_Scaled(xtrain)
-        xtest= MinMax_Scaled(xtest)
+        xtrain = MinMax_Scaled(xtrain)
+        xtest = MinMax_Scaled(xtest)
     if scale == 'robust':
-        xtrain= Robust_Scaled(xtrain)
-        xtest= Robust_Scaled(xtest)
+        xtrain = Robust_Scaled(xtrain)
+        xtest = Robust_Scaled(xtest)
     if scale == 'power':
-        xtrain= PowerTransformer_Scaled(xtrain)
-        xtest= PowerTransformer_Scaled(xtest)
+        xtrain = PowerTransformer_Scaled(xtrain)
+        xtest = PowerTransformer_Scaled(xtest)
 
     return xtrain, xtest, ytrain, ytest
+
+
+def train(X_train, y_train, X_test, y_test, model_name, model, Perfs, scores=None, hue=None):
+    print('--------------------', model_name, '--------------------')
+
+    start_time = timeit.default_timer()
+    # Entraînement
+    model.fit(X_train, y_train)
+    # Prédiction sur le jeu de test
+    y_pred = model.predict(X_test)
+    elapsed = timeit.default_timer() - start_time
+
+    i = len(Perfs)
+    Perfs.loc[i, 'Model'] = model_name
+
+    # Evaluatation
+    if scores == None:
+        scores = ['RMSE', 'R²']
+    if 'RMSE' in scores:
+        RMSE = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+        Perfs.loc[i, 'RMSE'] = RMSE
+    if 'RMSLE' in scores:
+        RMSLE = np.sqrt(metrics.mean_squared_log_error(y_test, y_pred))
+        Perfs.loc[i, 'RMSLE'] = RMSLE
+    if 'R²' in scores:
+        R2 = np.abs(metrics.r2_score(y_test, y_pred))
+        Perfs.loc[i, 'R²'] = R2
+    Perfs.loc[i, 'Time'] = elapsed
+    if hue != None:
+        Perfs.loc[i, 'hue'] = hue
+
+    print(Perfs.loc[i])
+
+    # afficher les prédictions
+    plt.scatter(y_test, y_pred, color='coral', s=10)
+    # étiqueter les axes et le graphique
+    plt.xlabel('Target', fontsize=16)
+    plt.ylabel('Prediction', fontsize=16)
+    plt.title(
+        model_name + ' (R²=' + str(round(Perfs.loc[i, 'R²'], 3)) + ')', fontsize=16)
+    plt.show()
+    return Perfs, model
+
+
+def train_cv(X_train, y_train, X_test, y_test, model_name, model, Perfs, param_grid, score_cv='neg_mean_squared_log_error', cv=5, scores=None, hue=None):
+    # Créer un classifieur kNN avec recherche d'hyperparamètre par validation croisée
+    cv_model = RandomizedSearchCV(
+        model,  # un classifieur kNN
+        param_grid,     # hyperparamètres à tester
+        cv=cv,           # nombre de folds de validation croisée
+        scoring=score_cv,   # score à optimiser
+        n_jobs=-1
+    )
+
+    perf, model = train(X_train, y_train, X_test, y_test,
+                        model_name, cv_model, Perfs, scores, hue)
+    print("Meilleur(s) hyperparamètre(s) sur le jeu d'entraînement:",
+          cv_model.best_params_)
+    return perf, cv_model.best_estimator_
+
+
+def display_scores(Perfs, y, yloc=0.9, hue=None):
+    scores = Perfs.columns.tolist()
+    scores.remove('Model')
+    scores.remove('hue')
+    if hue != None:
+        Perfs = renameCol(Perfs.copy(), 'hue', hue)
+    for score in scores:
+        Perfs[score] = Perfs[score].astype('float')
+
+    nb_line = len(colsOfType(Perfs))
+    nb_col = 1
+    height = nb_line*5
+    width = Perfs.shape[0] * 1.5
+    wspace = 0.05
+    hspace = 0.3
+
+    # Préparation de l'affichage des graphiques sur deux colonnes : une pour les histogrammes et une pour les boxplots
+    fig, axes = plt.subplots(nb_line, nb_col, figsize=(
+        width, height), sharex=False, sharey=False)
+    # ajuster l'espace entre les graphiques.
+    fig.subplots_adjust(wspace=wspace, hspace=hspace)
+    fig.suptitle('Evaluation (' + y + ')', x=0.5, y=yloc, fontsize=24,
+                 horizontalalignment='center')  # Titre globale de la figure
+
+    for i in range(0, len(scores)):
+        ax = axes[i]
+        sns.barplot(data=Perfs, ax=ax, x=Perfs['Model'], y=scores[i], hue=hue)
+        if hue != None:
+            for i in ax.containers:
+                ax.bar_label(i,)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=10)
+    plt.show()
+
+
+def features_importances(X, y, X_test, y_test, model):
+    print('-------------------- Feature importances --------------------')
+    # rfr = RandomForestRegressor(n_estimators=500, oob_score=True, random_state=0, n_jobs =-1)
+    # Perfs = train(X_train, y_train, X_test, y_test, 'RandomForest', rfr, Perfs, scores, hue=hue)
+
+    feature_names = X.columns.tolist()
+    feature_names.remove(y)
+
+    result = permutation_importance(
+        model, X_test, y_test, n_repeats=10, random_state=0, n_jobs=-1
+    )
+    forest_importances = pd.Series(
+        result.importances_mean, index=feature_names)
+
+    fig, ax = plt.subplots()
+    forest_importances.plot.bar(yerr=result.importances_std, ax=ax)
+    ax.set_title("Feature importances using permutation on full model")
+    ax.set_ylabel("Mean accuracy decrease")
+    plt.show()

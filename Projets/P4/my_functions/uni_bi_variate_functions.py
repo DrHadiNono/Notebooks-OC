@@ -1,5 +1,5 @@
 from .common_functions import *
-import scipy.stats as st
+from scipy.stats import chi2_contingency, chi2 as xi2, pearsonr
 
 
 def histo_distribution(data, horizontal=False):
@@ -40,8 +40,6 @@ def histo_distribution(data, horizontal=False):
         width, height), sharex=False, sharey=False)
     # ajuster l'espace entre les graphiques.
     fig.subplots_adjust(wspace=wspace, hspace=hspace)
-    # fig.suptitle('Distirbutions des variables quantitatives ', y=0.92,
-    #              fontsize=26, horizontalalignment='center')  # Titre globale de la figure
 
     meanprops = {'marker': 'o', 'markeredgecolor': 'black',
                  'markerfacecolor': 'firebrick'}  # Marquage des moyennes en rouge
@@ -101,7 +99,7 @@ def histo_distribution(data, horizontal=False):
             ax.set_xlabel('')
 
 
-def force_mesure(mesure, type):
+def force_mesure(mesure, type=None):
     ''' Renvoie un texte avec la force de la mesure selon les seuils '''
     force_text = ''
 
@@ -113,13 +111,13 @@ def force_mesure(mesure, type):
         if np.abs(mesure) >= seuil:
             force_text = force
 
-    return force_text + ' ' + type
+    return force_text + (' ' + type if type != None else '')
 
 
-def afficher_correlations(data, variables, categorie=None):
+def afficher_correlations(data, categorie=None):
     ''' Calcul et affichage des corrélations linéaires entre les 'variables' '''
     # Garder uniquement les variables numériques
-    variables = colsOfType(data[variables])
+    variables = colsOfType(data)
 
     # Calcul des corrélations
     data = data[(variables+[categorie] if categorie !=
@@ -148,11 +146,11 @@ def afficher_correlations(data, variables, categorie=None):
         for j in range(len(variables)):
             ax = g.axes[i, j]
             corr = round(correlations.loc[variables[i], variables[j]], 2)
-            ax.set_title('r²=' + str(corr) + ' (' + force_mesure(corr,
-                         'corrélation') + ')', y=0.99, loc='left')
+            ax.set_title('r²=' + str(corr) + ' p-value=' + str(round(pearsonr(data[variables[i]], data[variables[j]])[1], 3)) +
+                         ' (' + force_mesure(corr) + ')', y=0.99, loc='left')
 
 
-def correlation_matrix(data, corr_seuil=0, squared=True, triangle=True, sort=False):
+def correlation_matrix(data, corr_seuil=0, squared=True, triangle=True, sort=False, p_value=False):
     ''' Calcul et affiche la matrice heatmap dezs corrélations de Pearson entre les colonnes '''
     # Compute the correlation matrix
     cols = colsOfType(data)
@@ -173,6 +171,17 @@ def correlation_matrix(data, corr_seuil=0, squared=True, triangle=True, sort=Fal
     if sort:
         corr = corr.sort_index(axis=0).sort_index(axis=1)
 
+    pvalues = None
+    if p_value:
+        # Calculer les p-values pour la pertinence des corrélations
+        pvalues = []
+        for col1 in corr.columns:
+            p = []
+            for col2 in corr.columns:
+                pvalue = round(pearsonr(data[col1], data[col2])[1], 3)
+                p.append(pvalue)
+            pvalues.append(p)
+
     mask = None
     if triangle:
         # Generate a mask for the upper triangle
@@ -185,9 +194,9 @@ def correlation_matrix(data, corr_seuil=0, squared=True, triangle=True, sort=Fal
     cmap = sns.diverging_palette(230, 20, as_cmap=True)
 
     # Draw the heatmap with the mask and correct aspect ratio
-    sns.heatmap(corr, mask=mask, cmap=cmap, vmax=1, center=0,
+    sns.heatmap(corr, mask=mask, cmap=cmap, vmax=1, center=0, annot=pvalues,
                 square=True, linewidths=0.01, cbar_kws={'shrink': .5, 'label': 'Pearson Correlation (r'+('²' if squared else '')+')'})
-
+    plt.title('Correlations', fontsize=24)
     plt.show()
 
 
@@ -204,12 +213,12 @@ def eta_squared(x, y):
     return SCE/SCT
 
 
-def ANOVA(data, X, Ys=None, sort=True, display_kde=True):
+def ANOVA(data, X, Ys=None, sort=True, display_kde=True, yloc=0.9):
     ''' Analyse de la variance des variables en paramètres '''
     if sort:
         # Ordonner le data set sur la catégorie permettra éventuellement de voir les possibles corrélations sur les graphiques
         data = data.sort_values(X, ascending=False)
-    #Récupérer ou garder uniquement les colonnes numériques
+    # Récupérer ou garder uniquement les colonnes numériques
     if Ys == None:
         Ys = colsOfType(data)
     else:
@@ -258,11 +267,11 @@ def ANOVA(data, X, Ys=None, sort=True, display_kde=True):
 
     mu_n2s = round(n2s/lines, 2)  # moyenne des variances (variance moyenne)
     fig.suptitle('Variance par ' + X + ' (n²=' + str(mu_n2s) + ' ' + force_mesure(mu_n2s, 'variance moyenne') + ')',
-                 x=0.5 if display_kde else 0.6, y=0.93, fontsize=24, horizontalalignment='center')  # Titre globale de la figure
+                 x=0.5 if display_kde else 0.6, y=yloc, fontsize=24, horizontalalignment='center')  # Titre globale de la figure
 
 
 def chi2(data, X, Y):
-    c = data[[X, Y]].pivot_table(index=X, columns=Y, aggfunc=len)
+    c = pd.crosstab(data[X], data[Y])
     cont = c.copy()
 
     tx = data[X].value_counts()
@@ -282,4 +291,23 @@ def chi2(data, X, Y):
     c = c.fillna(0)  # on remplace les valeurs nulles par des 0
     mesure = (c-indep)**2/indep
     xi_n = mesure.sum().sum()
-    sns.heatmap(mesure/xi_n, annot=c, cmap=sns.cm.rocket_r)
+
+    # Afficher les résultat du test chi²
+    chi, pval, dof, exp = chi2_contingency(c)
+    print('p-value is: ', pval)
+    significance = 0.05
+    p = 1 - significance
+    critical_value = xi2.ppf(p, dof)
+    print('chi=%.6f, critical value=%.6f' % (chi, critical_value))
+    if chi > critical_value:
+        print("""At %.2f level of significance, we reject the null hypotheses and accept H1. 
+    They are not independent.""" % (significance))
+    else:
+        print("""At %.2f level of significance, we accept the null hypotheses. 
+    They are independent.""" % (significance))
+
+    # Afficher la heatmap de contingence
+    plt.figure(figsize=(15, 8))
+    plt.title('CHi2 Contingency', fontsize=24)
+    sns.heatmap(data=mesure/xi_n, annot=c*100,
+                cmap=sns.cm.rocket_r, fmt='g', cbar_kws={'label': 'CHi2 (%)'})

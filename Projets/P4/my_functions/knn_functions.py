@@ -1,5 +1,5 @@
 from .machine_learning_common_functions import trainning_sets
-from sklearn import neighbors
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 import matplotlib.pyplot as plt
 
 
@@ -8,10 +8,10 @@ def knn_train(data, Y, k=10, regression=False, sampling_factor=1):
     # Data Split 5 Trainning sets
     xtrain, xtest, ytrain, ytest = trainning_sets(data, Y, sampling_factor)
     # K-NN
-    knn = neighbors.KNeighborsClassifier(
+    knn = KNeighborsClassifier(
         n_neighbors=k, weights='distance', n_jobs=-1)
     if regression:
-        knn = neighbors.KNeighborsRegressor(
+        knn = KNeighborsRegressor(
             n_neighbors=k, weights='distance', n_jobs=-1)
 
     knn.fit(xtrain, ytrain)
