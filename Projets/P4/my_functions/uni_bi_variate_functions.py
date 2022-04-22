@@ -213,7 +213,7 @@ def eta_squared(x, y):
     return SCE/SCT
 
 
-def ANOVA(data, X, Ys=None, sort=True, display_kde=True, yloc=0.9):
+def ANOVA(data, X, Ys=None, sort=True, display_kde=True, yloc=0.9, hspace=0.3, width=8, heigth=0.26):
     ''' Analyse de la variance des variables en paramètres '''
     if sort:
         # Ordonner le data set sur la catégorie permettra éventuellement de voir les possibles corrélations sur les graphiques
@@ -229,9 +229,9 @@ def ANOVA(data, X, Ys=None, sort=True, display_kde=True, yloc=0.9):
     cols = 2 if display_kde else 1
     index = 0
     fig, axes = plt.subplots(lines, cols, figsize=(
-        cols*12, lines*5), sharex=False, sharey=False)
+        cols*width, int(lines*len(data[X].unique())*heigth)), sharex=False, sharey=False)
     # ajuster l'espace entre les graphiques.
-    fig.subplots_adjust(wspace=0.025, hspace=0.2)
+    fig.subplots_adjust(wspace=0.025, hspace=hspace)
     meanprops = {'marker': 'o', 'markeredgecolor': 'black',
                  'markerfacecolor': 'firebrick'}  # Marquage des moyennes en rouge
 
@@ -263,11 +263,11 @@ def ANOVA(data, X, Ys=None, sort=True, display_kde=True, yloc=0.9):
         n2s += n2
         # Afficher et ajuster la position du titre des graphiques (valeur et type de la corrélation)
         ax.set_title('n²=' + str(n2) + ' (' + force_mesure(n2,
-                     'variance') + ')', x=-.1 if display_kde else .4, y=0.985, loc='left')
+                     'variance') + ')', x=-.1 if display_kde else .4, y=0.985 if display_kde else 1, loc='left')
 
     mu_n2s = round(n2s/lines, 2)  # moyenne des variances (variance moyenne)
     fig.suptitle('Variance par ' + X + ' (n²=' + str(mu_n2s) + ' ' + force_mesure(mu_n2s, 'variance moyenne') + ')',
-                 x=0.5 if display_kde else 0.6, y=yloc, fontsize=24, horizontalalignment='center')  # Titre globale de la figure
+                 x=0.5 if display_kde else 0.8, y=yloc, fontsize=24, horizontalalignment='center')  # Titre globale de la figure
 
 
 def chi2(data, X, Y):
@@ -307,7 +307,11 @@ def chi2(data, X, Y):
     They are independent.""" % (significance))
 
     # Afficher la heatmap de contingence
-    plt.figure(figsize=(15, 8))
+    width = len(data[X].unique()) * 0.6
+    heigth = len(data[Y].unique()) * 0.6
+    fig, ax = plt.subplots(figsize=(heigth, width))
     plt.title('CHi2 Contingency', fontsize=24)
     sns.heatmap(data=mesure/xi_n, annot=c*100,
-                cmap=sns.cm.rocket_r, fmt='g', cbar_kws={'label': 'CHi2 (%)'})
+                cmap=sns.cm.rocket_r, fmt='g', cbar_kws={'label': 'CHi2 (%)'}, ax=ax)
+    ax.set_xlabel(Y)
+    ax.set_ylabel(X)
