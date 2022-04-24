@@ -192,6 +192,6 @@ def features_importances(X, y, X_test, y_test, model):
     for i in ax.containers:
         ax.bar_label(i,)
     ax.set_title(
-        "Feature importances using permutation on full model", fontsize=20)
+        "Feature importances (" + y + ")", fontsize=20)
     ax.set_xlabel("Root Mean Accuracy Decrease")
     plt.show()
