@@ -73,7 +73,7 @@ def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, labels=None, 
     for (d1, d2) in axis_ranks:  # On affiche les n_comp/2 premiers plans factoriels,
         if d2 < n_comp:
             # initialisation de la figure
-            fig, ax = plt.subplots(figsize=(7, 6))
+            fig, ax = plt.subplots(figsize=(10, 10))
 
             # affichage des points
             if discrete_illustrative_var is None and continuous_illustrative_var is None:
@@ -101,10 +101,10 @@ def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, labels=None, 
                              ha='center', va='center')
 
             # détermination des limites du graphique
-            plt.xlim([np.min(X_projected[:, [d1]])*1.1,
-                     np.max(X_projected[:, [d1]])*1.1])
-            plt.ylim([np.min(X_projected[:, [d2]])*1.1,
-                     np.max(X_projected[:, [d2]])*1.1])
+            plt.xlim([np.min(X_projected[:, [d1]])*1.2,
+                     np.max(X_projected[:, [d1]])*1.2])
+            plt.ylim([np.min(X_projected[:, [d2]])*1.2,
+                     np.max(X_projected[:, [d2]])*1.2])
 
             # affichage des lignes horizontales et verticales
             plt.plot([-100, 100], [0, 0], color='grey', ls='--')
@@ -134,7 +134,7 @@ def display_scree_plot(pca):
 def PCA(data, n_comp=5, cols=None, alpha=1, continuous_illustrative_var=None, discrete_illustrative_var=None, enable_display_scree_plot=True, enable_display_circles=True, enable_display_factorial_planes=True):
     ''' Calcul et affiche l'ACP d'un data set '''
     if cols is None:
-        cols = data.columns.tolist()
+        cols = colsOfType(data)
 
     # choix du nombre de composantes à calculer
     n_comp = min(n_comp, len(cols))
