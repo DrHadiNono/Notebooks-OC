@@ -270,7 +270,7 @@ def ANOVA(data, X, Ys=None, sort=True, display_kde=True, yloc=0.9, hspace=0.3, w
                  x=0.5 if display_kde else 0.8, y=yloc, fontsize=24, horizontalalignment='center')  # Titre globale de la figure
 
 
-def chi2(data, X, Y):
+def chi2(data, X, Y, heigth=None, width=None):
     c = pd.crosstab(data[X], data[Y])
     cont = c.copy()
 
@@ -307,9 +307,11 @@ def chi2(data, X, Y):
     They are independent.""" % (significance))
 
     # Afficher la heatmap de contingence
-    width = len(data[X].unique()) * 0.6
-    heigth = len(data[Y].unique()) * 0.6
-    fig, ax = plt.subplots(figsize=(heigth, width))
+    if width==None:
+        width = len(data[X].unique()) * 0.6
+    if heigth==None:
+        heigth = len(data[Y].unique()) * 0.6
+    fig, ax = plt.subplots(figsize=(width, heigth))
     plt.title('CHi2 Contingency', fontsize=24)
     sns.heatmap(data=mesure/xi_n, annot=c*100,
                 cmap=sns.cm.rocket_r, fmt='g', cbar_kws={'label': 'CHi2 (%)'}, ax=ax)

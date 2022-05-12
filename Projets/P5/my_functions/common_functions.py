@@ -117,8 +117,10 @@ def MinMax_Scaled(data, frame=False, return_scaler=False):
 def Std_Scaled(data, frame=False, return_scaler=False):
     return scaled(data, StandardScaler(), frame, return_scaler)
 
+
 def Robust_Scaled(data, frame=False, return_scaler=False):
     return scaled(data, RobustScaler(), frame, return_scaler)
+
 
 def PowerTransformer_Scaled(data, frame=False, return_scaler=False):
     return scaled(data, PowerTransformer(), frame, return_scaler)

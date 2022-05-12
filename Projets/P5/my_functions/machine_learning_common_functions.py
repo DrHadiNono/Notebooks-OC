@@ -195,3 +195,19 @@ def features_importances(X, y, X_test, y_test, model):
         "Feature importances (" + y + ")", fontsize=20)
     ax.set_xlabel("Root Mean Accuracy Decrease")
     plt.show()
+
+
+def OneHotEncoding(data, categories=None, new_names=None):
+    # Encodage des colonnes categorielles
+    if categories == None:
+        categories = colsOfType(data, 'object')
+
+    df_categories = data.copy()
+    if new_names!=None:
+        # Changer le nom des colonnes
+        for i in range(len(categories)):
+            df_categories = renameCol(df_categories, categories[i], new_names[i])
+        categories = new_names
+    df_OHE = pd.get_dummies(df_categories, columns=categories)
+
+    return df_OHE

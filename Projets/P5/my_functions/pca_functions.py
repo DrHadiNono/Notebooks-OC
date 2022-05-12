@@ -1,3 +1,4 @@
+from tkinter import Label
 from .common_functions import *
 
 from sklearn.impute import KNNImputer
@@ -67,8 +68,12 @@ def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, labels=None, 
         # Generate a custom diverging colormap
         cmap = sns.color_palette('RdYlGn_r', as_cmap=True)
 
-    if discrete_illustrative_var is not None:
-        title = discrete_illustrative_var.name
+    if discrete_illustrative_var is not None:        
+        title = ''
+        try:
+            title = discrete_illustrative_var.name
+        except AttributeError:
+            pass    
 
     for (d1, d2) in axis_ranks:  # On affiche les n_comp/2 premiers plans factoriels,
         if d2 < n_comp:
@@ -83,7 +88,12 @@ def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, labels=None, 
             if continuous_illustrative_var is not None:
                 plt.scatter(X_projected[:, d1],
                             X_projected[:, d2], c=continuous_illustrative_var, cmap=cmap, alpha=alpha)
-                plt.colorbar(label=continuous_illustrative_var.name)
+                label = ''
+                try:
+                    label=continuous_illustrative_var.name
+                except AttributeError:
+                    pass              
+                plt.colorbar(label=label)
 
             if discrete_illustrative_var is not None:
                 discrete_illustrative_var = np.array(
@@ -131,35 +141,10 @@ def display_scree_plot(pca):
     plt.show(block=False)
 
 
-def PCA(data, n_comp=5, cols=None, alpha=1, continuous_illustrative_var=None, discrete_illustrative_var=None, enable_display_scree_plot=True, enable_display_circles=True, enable_display_factorial_planes=True):
+def PCA(data, n_comp=5, cols=None, alpha=1, method='pca', continuous_illustrative_var=None, discrete_illustrative_var=None, enable_display_scree_plot=True, enable_display_circles=True, enable_display_factorial_planes=True):
     ''' Calcul et affiche l'ACP d'un data set '''
-    if cols is None:
-        cols = colsOfType(data)
-
-    # choix du nombre de composantes à calculer
-    n_comp = min(n_comp, len(cols))
+    pca, X_scaled = DimensionalityReduction(data, n_comp, cols, method, True)
     Fs = [(i, i+1) for i in range(0, n_comp, 2)]
-
-    data_pca = data[cols]
-
-    # préparation des données pour l'ACP
-    if data_pca.isnull().sum().sum() > 0:
-        knn_imputer = KNNImputer(n_neighbors=max(
-            10, int(len(data_pca)*0.1)), weights='distance')
-        knn_imputer_transfom = knn_imputer.fit_transform(data_pca)
-        data_pca = pd.DataFrame(knn_imputer_transfom,
-                                columns=data_pca.columns, index=data_pca.index)
-
-    X = data_pca.values
-    names = data.index  # ou data.index pour avoir les intitulés
-    features = data[cols].columns
-
-    # Centrage et Réduction
-    X_scaled = Std_Scaled(X)
-
-    # Calcul des composantes principales
-    pca = decomposition.PCA(n_components=n_comp)
-    pca.fit(X_scaled)
 
     if enable_display_scree_plot:
         # Eboulis des valeurs propres
@@ -168,12 +153,14 @@ def PCA(data, n_comp=5, cols=None, alpha=1, continuous_illustrative_var=None, di
     pcs = pca.components_
     if enable_display_circles:
         # Cercle des corrélations
-        display_circles(pcs, n_comp, pca, Fs, labels=np.array(features))
+        if cols is None:
+            cols = colsOfType(data)
+        display_circles(pcs, n_comp, pca, Fs,
+                        labels=np.array(data[cols].columns))
 
     if enable_display_factorial_planes:
         # Projection des individus
         X_projected = pca.transform(X_scaled)
-        # , labels = np.array(names))
         display_factorial_planes(X_projected, n_comp, pca,
                                  Fs, alpha=alpha, continuous_illustrative_var=continuous_illustrative_var, discrete_illustrative_var=discrete_illustrative_var)
 
@@ -192,3 +179,67 @@ def PCA_Compression(data, components, cols=None, prefix='comp'):
 
     compressed_data = pd.DataFrame(compressed_data, index=data.index)
     return compressed_data
+
+
+def DimensionalityReduction(data, n_comp=5, cols=None, method='pca', return_xscaled=False):
+    if cols is None:
+        cols = colsOfType(data)
+
+    # choix du nombre de composantes à calculer
+    n_comp = min(n_comp, len(cols))
+    data_ca = data[cols]
+
+    # préparation des données pour l'ACP
+    if data_ca.isnull().sum().sum() > 0:
+        knn_imputer = KNNImputer(n_neighbors=max(
+            10, int(len(data_ca)*0.1)), weights='distance')
+        knn_imputer_transfom = knn_imputer.fit_transform(data_ca)
+        data_ca = pd.DataFrame(knn_imputer_transfom,
+                               columns=data_ca.columns, index=data_ca.index)
+
+    X = data_ca.values
+
+    # Centrage et Réduction
+    X_scaled = Std_Scaled(X)
+
+    # Calcul des composantes principales
+    if method == 'fa':
+        ca = decomposition.FactorAnalysis(n_components=n_comp)
+    elif method == 'nmf':
+        X_scaled = MinMax_Scaled(X_scaled)
+        ca = decomposition.NMF(n_components=n_comp)
+    elif method == 'kpca':
+        ca = decomposition.KernelPCA(n_components=5, kernel='rbf', gamma=10)
+    else:
+        ca = decomposition.PCA(n_components=n_comp)
+    ca.fit(X_scaled)
+
+    if return_xscaled:
+        return ca, X_scaled
+    else:
+        return ca
+
+
+def ComponentsAnalysis(data, n_comp=5, cols=None, method=None, heigth=10, width=10):
+    n_comp = min(n_comp, len(colsOfType(data)))
+    fa = DimensionalityReduction(data, n_comp, cols, method)
+    components = fa.components_
+
+    vmax = np.abs(components).max()
+    # initialisation de la figure
+    fig, ax = plt.subplots(figsize=(width, heigth))
+    plt.imshow(components, cmap="RdYlGn_r", vmax=vmax, vmin=-vmax)
+    plt.colorbar(label='Weight')
+    plt.title('Components Analysis (' + method + ')', fontsize=24)
+    feature_names = colsOfType(data)
+    ax.set_xticks(np.arange(len(feature_names)))
+    if ax.get_subplotspec().is_first_col():
+        ax.set_xticklabels(feature_names, rotation=90)
+    else:
+        ax.set_xticklabels([])
+    ax.set_yticks(range(n_comp))
+    ax.set_yticklabels([str(i+1) for i in range(n_comp)])
+    ax.set_ylabel('Components', fontsize=16)
+    ax.set_xlabel('Features', fontsize=16)
+    plt.show()
+    return components
