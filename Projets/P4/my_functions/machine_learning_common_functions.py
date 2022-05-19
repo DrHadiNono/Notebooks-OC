@@ -81,10 +81,9 @@ def train(X_train, y_train, X_test, y_test, model_name, model, Perfs, scores=Non
     y_pred = model.predict(X_test)
     elapsed = timeit.default_timer() - start_time
 
+    # Evaluatation
     i = len(Perfs)
     Perfs.loc[i, 'Model'] = model_name
-
-    # Evaluatation
     if scores == None:
         scores = ['RMSE', 'R²']
     if 'RMSE' in scores:
@@ -139,7 +138,7 @@ def train_cv(X_train, y_train, X_test, y_test, model_name, model, Perfs, param_g
     return perf, cv_model.best_estimator_
 
 
-def display_scores(Perfs, y, yloc=0.92, hue=None):
+def display_scores(Perfs, y=None, yloc=0.92, hue=None):
     Perfs = Perfs.copy()
     scores = Perfs.columns.tolist()
     scores.remove('Model')
@@ -160,7 +159,7 @@ def display_scores(Perfs, y, yloc=0.92, hue=None):
         width, height), sharex=False, sharey=False)
     # ajuster l'espace entre les graphiques.
     fig.subplots_adjust(wspace=wspace, hspace=hspace)
-    fig.suptitle('Evaluation (' + y + ')', x=0.5, y=yloc, fontsize=24,
+    fig.suptitle('Evaluation' + ((' ('+y+')') if y != None and y != ''), x=0.5, y=yloc, fontsize=24,
                  horizontalalignment='center')  # Titre globale de la figure
 
     for i in range(0, len(scores)):

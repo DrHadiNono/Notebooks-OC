@@ -160,7 +160,7 @@ def display_scores(Perfs, y, yloc=0.92, hue=None):
         width, height), sharex=False, sharey=False)
     # ajuster l'espace entre les graphiques.
     fig.subplots_adjust(wspace=wspace, hspace=hspace)
-    fig.suptitle('Evaluation (' + y + ')', x=0.5, y=yloc, fontsize=24,
+    fig.suptitle('Evaluation' + ((' ('+y+')') if y != None and y != '' else ''), x=0.5, y=yloc, fontsize=24,
                  horizontalalignment='center')  # Titre globale de la figure
 
     for i in range(0, len(scores)):
@@ -192,7 +192,7 @@ def features_importances(X, y, X_test, y_test, model):
     for i in ax.containers:
         ax.bar_label(i,)
     ax.set_title(
-        "Feature importances (" + y + ")", fontsize=20)
+        "Feature importances" + ((' ('+y+')') if y != None and y != '' else ''), fontsize=20)
     ax.set_xlabel("Root Mean Accuracy Decrease")
     plt.show()
 
@@ -203,10 +203,11 @@ def OneHotEncoding(data, categories=None, new_names=None):
         categories = colsOfType(data, 'object')
 
     df_categories = data.copy()
-    if new_names!=None:
+    if new_names != None:
         # Changer le nom des colonnes
         for i in range(len(categories)):
-            df_categories = renameCol(df_categories, categories[i], new_names[i])
+            df_categories = renameCol(
+                df_categories, categories[i], new_names[i])
         categories = new_names
     df_OHE = pd.get_dummies(df_categories, columns=categories)
 
