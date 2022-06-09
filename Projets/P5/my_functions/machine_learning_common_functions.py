@@ -1,11 +1,12 @@
+from sklearn.preprocessing import OrdinalEncoder
 from sklearn.model_selection import train_test_split
-from sklearn import metrics, dummy
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.inspection import permutation_importance
 from scipy.cluster.hierarchy import dendrogram
+from sklearn.metrics import mean_squared_error, mean_squared_log_error, r2_score, davies_bouldin_score, silhouette_score, calinski_harabasz_score
 
 from my_functions.common_functions import *
-from matplotlib import cm
+from my_functions.dimensionality_reduction_functions import PCA
 
 import timeit
 
@@ -88,14 +89,14 @@ def train(X_train, y_train, X_test, y_test, model_name, model, Perfs, scores=Non
     if scores == None:
         scores = ['RMSE', 'R²']
     if 'RMSE' in scores:
-        RMSE = np.sqrt(metrics.mean_squared_error(y_test, y_pred))
+        RMSE = np.sqrt(mean_squared_error(y_test, y_pred))
         Perfs.loc[i, 'RMSE'] = RMSE
     if 'RMSLE' in scores:
         y_pred[y_pred < 0] = 0
-        RMSLE = np.sqrt(metrics.mean_squared_log_error(y_test, y_pred))
+        RMSLE = np.sqrt(mean_squared_log_error(y_test, y_pred))
         Perfs.loc[i, 'RMSLE'] = RMSLE
     if 'R²' in scores:
-        R2 = np.abs(metrics.r2_score(y_test, y_pred))
+        R2 = np.abs(r2_score(y_test, y_pred))
         if R2 > 1:
             R2 = 0
         Perfs.loc[i, 'R²'] = R2
@@ -108,24 +109,37 @@ def train(X_train, y_train, X_test, y_test, model_name, model, Perfs, scores=Non
     print(Perfs.loc[i])
 
     # afficher les prédictions
-    fig, ax = plt.subplots(figsize=(10, 5))
-    sns.scatterplot(x=y_test, y=y_pred, color='coral',
-                    s=20, label='Actual Model', ax=ax)
-    sns.lineplot(x=[min(y_test), max(y_test)], y=[
-                 min(y_test), max(y_test)], color='gray', label='Ideal Model', ax=ax)
-    # étiqueter les axes et le graphique
-    plt.xlabel('Target', fontsize=16)
-    plt.ylabel('Prediction', fontsize=16)
-    plt.title(
-        model_name + ' (R²=' + str(round(Perfs.loc[i, 'R²'], 3)) + ')', fontsize=20)
-    plt.show()
+    if 'R²' in scores:
+        fig, ax = plt.subplots(figsize=(10, 5))
+        sns.scatterplot(x=y_test, y=y_pred, color='coral',
+                        s=20, label='Actual Model', ax=ax)
+        sns.lineplot(x=[min(y_test), max(y_test)], y=[
+            min(y_test), max(y_test)], color='gray', label='Ideal Model', ax=ax)
+        # étiqueter les axes et le graphique
+        plt.xlabel('Target', fontsize=16)
+        plt.ylabel('Prediction', fontsize=16)
+        plt.title(
+            model_name + ' (R²=' + str(round(Perfs.loc[i, 'R²'], 3)) + ')', fontsize=20)
+        plt.show()
+    if 'ROC' in scores:
+        fig, ax = plt.subplots(figsize=(10, 5))
+        sns.scatterplot(x=y_test, y=y_pred, color='coral',
+                        s=20, label='Actual Model', ax=ax)
+        sns.lineplot(x=[min(y_test), max(y_test)], y=[
+            min(y_test), max(y_test)], color='gray', label='Ideal Model', ax=ax)
+        # étiqueter les axes et le graphique
+        plt.xlabel('Target', fontsize=16)
+        plt.ylabel('Prediction', fontsize=16)
+        plt.title(
+            model_name + ' (R²=' + str(round(Perfs.loc[i, 'R²'], 3)) + ')', fontsize=20)
+        plt.show()
     return Perfs, model
 
 
 def train_cv(X_train, y_train, X_test, y_test, model_name, model, Perfs, param_grid, score_cv='neg_mean_squared_log_error', cv=5, scores=None, hue=None):
     # Créer un classifieur kNN avec recherche d'hyperparamètre par validation croisée
     cv_model = RandomizedSearchCV(
-        model,  # un classifieur kNN
+        model,  # le modèle à Cross Valider
         param_grid,     # hyperparamètres à tester
         cv=cv,           # nombre de folds de validation croisée
         scoring=score_cv,   # score à optimiser
@@ -139,7 +153,7 @@ def train_cv(X_train, y_train, X_test, y_test, model_name, model, Perfs, param_g
     return perf, cv_model.best_estimator_
 
 
-def display_scores(Perfs, y, yloc=0.92, hue=None):
+def display_scores(Perfs, yloc=0.92, y=None, hue=None, width=None, height=None, rotation=None, hspace=0.3):
     Perfs = Perfs.copy()
     scores = Perfs.columns.tolist()
     scores.remove('Model')
@@ -148,12 +162,13 @@ def display_scores(Perfs, y, yloc=0.92, hue=None):
         Perfs = renameCol(Perfs.copy(), 'hue', hue)
     Perfs[colsOfType(Perfs)] = round(Perfs[colsOfType(Perfs)], 3)
 
-    nb_line = len(colsOfType(Perfs))
+    nb_line = len(scores)
     nb_col = 1
-    height = nb_line * (3.3 if hue == None else 3)
-    width = Perfs.shape[0] * (1.5 if hue == None else 0.7)
+    height = (nb_line * (3.3 if hue == None else 3)
+              ) if height == None else height
+    width = Perfs.shape[0] * \
+        (1.5 if hue == None else 0.7) if width == None else width
     wspace = 0.05
-    hspace = 0.3
 
     # Préparation de l'affichage des graphiques sur deux colonnes : une pour les histogrammes et une pour les boxplots
     fig, axes = plt.subplots(nb_line, nb_col, figsize=(
@@ -163,13 +178,13 @@ def display_scores(Perfs, y, yloc=0.92, hue=None):
     fig.suptitle('Evaluation' + ((' ('+y+')') if y != None and y != '' else ''), x=0.5, y=yloc, fontsize=24,
                  horizontalalignment='center')  # Titre globale de la figure
 
+    rotation = (8 if hue == None else 5) if rotation == None else rotation
     for i in range(0, len(scores)):
         ax = axes[i]
         sns.barplot(data=Perfs, ax=ax, x=Perfs['Model'], y=scores[i], hue=hue)
         for i in ax.containers:
             ax.bar_label(i,)
-        ax.set_xticklabels(ax.get_xticklabels(),
-                           rotation=(8 if hue == None else 5))
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=rotation)
         ax.set_xlabel('', fontsize=0)
     plt.show()
 
@@ -212,3 +227,97 @@ def OneHotEncoding(data, categories=None, new_names=None):
     df_OHE = pd.get_dummies(df_categories, columns=categories)
 
     return df_OHE
+
+
+def OrdinalEncoding(data, col):
+    dft = data.groupby(col).count()
+    data[col] = data[col].apply(lambda x: dft.loc[x][0])
+    data[col] = OrdinalEncoder().fit_transform(
+        np.array(data[col]).reshape(-1, 1))
+    return data
+
+
+def clustering(data, model, model_name, Perfs=None, scale='std', scores=None, hue=None, display_components=3):
+    print('--------------------', model_name, '--------------------')
+    # Nombre de clusters souhaités (taux  de compression)
+    data = data[colsOfType(data)]  # garder les colonnes numériques uniquement
+
+    # préparation des données pour le clustering
+    X = data.values
+    if scale == 'power':
+        X_scaled = PowerTransformer_Scaled(X)
+    if scale == 'std':
+        X_scaled = Std_Scaled(X)
+    if scale == 'min-max':
+        X_scaled = MinMax_Scaled(X)
+    else:
+        X_scaled = X
+
+    # Clustering
+    start_time = timeit.default_timer()
+    model = model.fit(X_scaled)
+    elapsed = timeit.default_timer() - start_time
+    labels = model.labels_
+
+    stop = False
+    try:
+        if Perfs == None:
+            stop = True
+    except:
+        pass
+    if not stop :
+        # Evaluatation
+        i = len(Perfs)
+        Perfs.loc[i, 'Model'] = model_name
+        if scores == None:
+            scores = ['Calinski-Harabasz(Var)',
+                      'Davies-Bouldin(Sim)', 'Silhouette']
+        if 'Calinski-Harabasz(Var)' in scores:
+            Perfs.loc[i,
+                      'Calinski-Harabasz(Var)'] = calinski_harabasz_score(X, labels)
+        if 'Davies-Bouldin(Sim)' in scores:
+            Perfs.loc[i,
+                      'Davies-Bouldin(Sim)'] = davies_bouldin_score(X, labels)
+        if 'Silhouette' in scores:
+            Perfs.loc[i, 'Silhouette'] = silhouette_score(X, labels)
+        Perfs.loc[i, 'Time(s)'] = elapsed
+        if hue != None:
+            Perfs.loc[i, 'hue'] = hue
+        # Convertion de type
+        for score in scores:
+            Perfs[score] = Perfs[score].astype('float')
+        print(Perfs.loc[i])
+
+    if display_components > 1:
+        DisplayClustering(data, labels, scale, display_components)
+    return model
+
+
+def DisplayClustering(data, labels, scale='std', display_components=3):
+    PCA(data, display_components, continuous_illustrative_var=labels, enable_display_circles=False,
+        enable_display_scree_plot=False, scale=scale, s=1, display_3D=(display_components == 3))
+
+
+def clusteringCenters(data, model, scale=None):
+    cols = colsOfType(data)
+    scaler = None
+    if scale == 'power':
+        _, scaler = PowerTransformer_Scaled(data[cols], return_scaler=True)
+    if scale == 'std':
+        _, scaler = Std_Scaled(data[cols], return_scaler=True)
+    if scale == 'min-max':
+        _, scaler = MinMax_Scaled(data[cols], return_scaler=True)
+
+    centers = model.cluster_centers_
+    if scaler != None:
+        centers = scaler.inverse_transform(centers)
+    else:
+        cols = data.columns
+    return pd.DataFrame(centers, columns=cols)
+
+
+def centroids(data, labels):
+    n_clusters = len(np.unique(labels))
+    d = data.copy()
+    d['Cluster'] = labels
+    return d.groupby('Cluster').mean()

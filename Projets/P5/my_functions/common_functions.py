@@ -126,3 +126,24 @@ def PowerTransformer_Scaled(data, frame=False, return_scaler=False):
     return scaled(data, PowerTransformer(), frame, return_scaler)
 
 # ============================================================================
+
+
+# ============================ Plots ======================================
+def barplot(x, y, xlabel, ylabel, width=10, heigth=5):
+    fig, ax = plt.subplots(figsize=(width, heigth))
+    sns.barplot(x=x, y=y)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    for i in ax.containers:
+        ax.bar_label(i, labels=[str(round(i.datavalues[j], 2))+'\n'+str(
+            round(i.datavalues[j]/(sum(i.datavalues))*100, 2))+'%' for j in range(len(i))])
+    plt.show()
+
+
+def lineplot(x, y, xlabel, ylabel, width=10, heigth=5):
+    fig, ax = plt.subplots(figsize=(width, heigth))
+    sns.lineplot(y=y, x=x)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    plt.show()
+# ============================================================================

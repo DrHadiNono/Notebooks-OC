@@ -9,6 +9,16 @@ from matplotlib.collections import LineCollection
 from mpl_toolkits.mplot3d import Axes3D
 
 
+def display_scree_plot(pca):
+    scree = pca.explained_variance_ratio_*100
+    plt.bar(np.arange(len(scree))+1, scree)
+    plt.plot(np.arange(len(scree))+1, scree.cumsum(), c='red', marker='o')
+    plt.xlabel("rang de l'axe d'inertie")
+    plt.ylabel("pourcentage d'inertie")
+    plt.title('Eboulis des valeurs propres')
+    plt.show(block=False)
+
+
 def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0, lims=None):
     for (d1, d2) in axis_ranks:  # On affiche les n_comp/2 premiers plans factoriels,
         if d2 < n_comp:
@@ -65,90 +75,106 @@ def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0,
             plt.show(block=False)
 
 
-def display_factorial_planes(X_projected, n_comp, pca, labels=None, alpha=1, continuous_illustrative_var=None, discrete_illustrative_var=None):
-    if continuous_illustrative_var is not None:
-        # Generate a custom diverging colormap
-        cmap = sns.color_palette('RdYlGn_r', as_cmap=True)
-
-    if discrete_illustrative_var is not None:
-        title = ''
+def display_factorial_planes(X_projected, n_comp, pca=None, labels=None, alpha=1, continuous_illustrative_var=None, discrete_illustrative_var=None, s=10, display_3D=False):
+    if n_comp == 3 and display_3D:
+        displayed = False
         try:
-            title = discrete_illustrative_var.name
-        except AttributeError:
-            pass
+            if continuous_illustrative_var != None:
+                DisplayManifold3D(X_projected, n_comp, s,
+                                  continuous_illustrative_var)
+                displayed = True
+        except:
+            DisplayManifold3D(X_projected, n_comp, s,
+                              continuous_illustrative_var)
+            displayed = True
+        try:
+            if discrete_illustrative_var != None:
+                DisplayManifold3D(X_projected, n_comp, s,
+                                  discrete_illustrative_var)
+                displayed = True
+        except:
+            DisplayManifold3D(X_projected, n_comp, s,
+                              discrete_illustrative_var)
+            displayed = True
+        if not displayed:
+            DisplayManifold3D(X_projected, n_comp, s, None)
 
-    # initialisation de la figureQ
-    fig, axes = plt.subplots(n_comp-1, n_comp-1, figsize=(5*n_comp, 5*n_comp))
-    for c1 in range(n_comp-1):
-        c2 = 0
-        while c2 < n_comp:
-            if c2 != c1:
-                ax = axes[c1, c2-(1 if c2 > c1 else 0)]
-                # affichage des points
-                if discrete_illustrative_var is None and continuous_illustrative_var is None:
-                    ax.scatter(X_projected[:, c1],
-                               X_projected[:, c2], alpha=alpha)
+    else:
+        if continuous_illustrative_var is not None:
+            # Generate a custom diverging colormap
+            cmap = sns.color_palette('RdYlGn_r', as_cmap=True)
 
-                if continuous_illustrative_var is not None:
-                    label = ''
-                    try:
-                        label = continuous_illustrative_var.name
-                    except AttributeError:
-                        cmap = sns.color_palette('gist_rainbow', as_cmap=True)
-                    s = ax.scatter(X_projected[:, c1],
-                                   X_projected[:, c2], c=continuous_illustrative_var, cmap=cmap, alpha=alpha)
-                    if label != '':
-                        fig.colorbar(s, ax=ax, label=label)
-                if discrete_illustrative_var is not None:
-                    discrete_illustrative_var = np.array(
-                        discrete_illustrative_var)
-                    for value in np.unique(discrete_illustrative_var):
-                        selected = np.where(discrete_illustrative_var == value)
-                        ax.scatter(
-                            X_projected[selected, c1], X_projected[selected, c2], alpha=alpha, label=value)
-                    if title != '':
-                        ax.legend(title=title)
+        if discrete_illustrative_var is not None:
+            title = ''
+            try:
+                title = discrete_illustrative_var.name
+            except AttributeError:
+                pass
 
-                # affichage des labels des points
-                if labels is not None:
-                    for i, (x, y) in enumerate(X_projected[:, [c1, c2]]):
-                        ax.text(x, y, labels[i], fontsize='14',
-                                ha='center', va='center')
+        # initialisation de la figure
+        fig, axes = plt.subplots(
+            n_comp-1, n_comp-1, figsize=(5*n_comp, 5*n_comp))
+        for c1 in range(n_comp-1):
+            c2 = 0
+            while c2 < n_comp:
+                if c2 != c1:
+                    ax = axes
+                    if n_comp > 2:
+                        ax = axes[c1, c2-(1 if c2 > c1 else 0)]
 
-                # détermination des limites du graphique
-                fact = 1.5
-                ax.set_xlim([np.min(X_projected[:, [c1]])*fact,
-                             np.max(X_projected[:, [c1]])*fact])
-                ax.set_ylim([np.min(X_projected[:, [c2]])*fact,
-                             np.max(X_projected[:, [c2]])*fact])
+                    # affichage des points
+                    if discrete_illustrative_var is None and continuous_illustrative_var is None:
+                        ax.scatter(X_projected[:, c1],
+                                   X_projected[:, c2], alpha=alpha, s=s)
 
-                # affichage des lignes horizontales et verticales
-                ax.plot([-100, 100], [0, 0], color='grey', ls='--')
-                ax.plot([0, 0], [-100, 100], color='grey', ls='--')
+                    if continuous_illustrative_var is not None:
+                        label = ''
+                        try:
+                            label = continuous_illustrative_var.name
+                        except AttributeError:
+                            cmap = sns.color_palette(
+                                'gist_rainbow', as_cmap=True)
+                            sc = ax.scatter(X_projected[:, c1],
+                                            X_projected[:, c2], c=continuous_illustrative_var, cmap=cmap, alpha=alpha, s=s)
+                        if label != '':
+                            fig.colorbar(sc, ax=ax, label=label)
+                    if discrete_illustrative_var is not None:
+                        discrete_illustrative_var = np.array(
+                            discrete_illustrative_var)
+                        for value in np.unique(discrete_illustrative_var):
+                            selected = np.where(
+                                discrete_illustrative_var == value)
+                            ax.scatter(
+                                X_projected[selected, c1], X_projected[selected, c2], alpha=alpha, label=value, s=s)
+                        if title != '':
+                            ax.legend(title=title)
 
-                # nom des axes, avec le pourcentage d'inertie expliqué
-                ax.set_xlabel('C{} ({}%)'.format(
-                    c1+1, round(100*pca.explained_variance_ratio_[c1], 1)))
-                ax.set_ylabel('C{} ({}%)'.format(
-                    c2+1, round(100*pca.explained_variance_ratio_[c2], 1)))
+                    # affichage des labels des points
+                    if labels is not None:
+                        for i, (x, y) in enumerate(X_projected[:, [c1, c2]]):
+                            ax.text(x, y, labels[i], fontsize='14',
+                                    ha='center', va='center')
 
-                ax.set_title(
-                    'Projection des individus (sur C{} et C{})'.format(c1+1, c2+1))
-            c2 += 1
-    plt.show()
+                    # détermination des limites du graphique
+                    fact = 1.5
+                    ax.set_xlim([np.min(X_projected[:, [c1]])*fact,
+                                np.max(X_projected[:, [c1]])*fact])
+                    ax.set_ylim([np.min(X_projected[:, [c2]])*fact,
+                                np.max(X_projected[:, [c2]])*fact])
+
+                    # affichage des lignes horizontales et verticales
+                    ax.plot([-100, 100], [0, 0], color='grey', ls='--')
+                    ax.plot([0, 0], [-100, 100], color='grey', ls='--')
+
+                    # nom des axes, avec le pourcentage d'inertie expliqué
+                    ax.set_xlabel('C{'+str(c1+1)+'}'+((' ('+str(round(100*pca.explained_variance_ratio_[c1], 1))+'%)') if pca!=None else ''))
+                    ax.set_ylabel('C{'+str(c2+1)+'}'+ ((' ('+str(round(100*pca.explained_variance_ratio_[c1], 1))+'%)') if pca!=None else ''))
+                    ax.set_title('Projection des individus (sur C{} et C{})'.format(c1+1, c2+1))
+                c2 += 1
+        plt.show()
 
 
-def display_scree_plot(pca):
-    scree = pca.explained_variance_ratio_*100
-    plt.bar(np.arange(len(scree))+1, scree)
-    plt.plot(np.arange(len(scree))+1, scree.cumsum(), c='red', marker='o')
-    plt.xlabel("rang de l'axe d'inertie")
-    plt.ylabel("pourcentage d'inertie")
-    plt.title('Eboulis des valeurs propres')
-    plt.show(block=False)
-
-
-def PCA(data, n_comp=5, cols=None, alpha=1, scale='std', continuous_illustrative_var=None, discrete_illustrative_var=None, enable_display_scree_plot=True, enable_display_circles=True, enable_display_factorial_planes=True):
+def PCA(data, n_comp=5, cols=None, alpha=1, scale='std', continuous_illustrative_var=None, discrete_illustrative_var=None, enable_display_scree_plot=True, enable_display_circles=True, enable_display_factorial_planes=True, s=10, display_3D=False):
     ''' Calcul et affiche l'ACP d'un data set '''
     pca, X_scaled = DimensionalityReduction(
         data, n_comp, cols, 'pca', True, scale=scale)
@@ -170,7 +196,7 @@ def PCA(data, n_comp=5, cols=None, alpha=1, scale='std', continuous_illustrative
         # Projection des individus
         X_projected = pca.transform(X_scaled)
         display_factorial_planes(X_projected, n_comp, pca,
-                                 alpha=alpha, continuous_illustrative_var=continuous_illustrative_var, discrete_illustrative_var=discrete_illustrative_var)
+                                 alpha=alpha, continuous_illustrative_var=continuous_illustrative_var, discrete_illustrative_var=discrete_illustrative_var, s=s, display_3D=display_3D)
     return pcs
 
 
@@ -188,24 +214,36 @@ def PCA_Compression(data, components, cols=None, prefix='comp'):
     return compressed_data
 
 
-def ManifoldReduction3D(data, manifold, n=None, c=None):
-    n_components = 3
+def ManifoldReduction3D(data, manifold, n=None):
     if n == None:
         n = len(data)
-    X = data.loc[:n, colsOfType(data)]
+    X = data.loc[:n-1, colsOfType(data)]
     X = Std_Scaled(X)
-    X_manifolded = manifold.fit_transform(X)
+    return manifold.fit_transform(X)
 
+
+def DisplayManifold3D(manifolded, n_components=3, s=10, c=None):
     fig, ax = plt.subplots(1, 1, figsize=(5*n_components, 5*n_components))
     ax = Axes3D(fig, auto_add_to_figure=False)
     fig.add_axes(ax)
 
-    x = X_manifolded[:, 0]
-    y = X_manifolded[:, 1]
-    z = X_manifolded[:, 2]
+    x = manifolded[:, 0]
+    y = manifolded[:, 1]
+    z = manifolded[:, 2]
 
-    ax.scatter(x, y, z, c=c, cmap=sns.color_palette(
-        'rainbow', as_cmap=True), alpha=0.8)
+    try:
+        ax.scatter(x, y, z, c=c[:len(manifolded)], cmap=sns.color_palette(
+            'rainbow', as_cmap=True), alpha=0.8, s=s)
+    except:
+        ax.scatter(x, y, z, alpha=0.8, s=s)
+
+    # nom des axes
+    ax.set_xlabel('C1', fontsize=24)
+    ax.set_ylabel('C2', fontsize=24)
+    ax.set_zlabel('C3', fontsize=24)
+
+    ax.set_title(
+        'Projection des individus')
     plt.show()
 
 
@@ -232,6 +270,10 @@ def DimensionalityReduction(data, n_comp=5, cols=None, method='pca', return_xsca
         X_scaled = PowerTransformer_Scaled(X)
     if scale == 'std':
         X_scaled = Std_Scaled(X)
+    if scale == 'min-max':
+        X_scaled = MinMax_Scaled(X)
+    else:
+        X_scaled = X
 
     # Calcul des composantes principales
     if method == 'fa':
