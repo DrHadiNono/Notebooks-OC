@@ -145,5 +145,6 @@ def lineplot(x, y, xlabel, ylabel, width=10, heigth=5):
     sns.lineplot(y=y, x=x)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
+    plt.xticks(x)
     plt.show()
 # ============================================================================

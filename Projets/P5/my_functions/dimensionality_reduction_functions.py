@@ -222,7 +222,7 @@ def ManifoldReduction3D(data, manifold, n=None):
     return manifold.fit_transform(X)
 
 
-def DisplayManifold3D(manifolded, n_components=3, s=10, c=None):
+def DisplayManifold3D(manifolded, n_components=3, s=10, c=None, title=None):
     fig, ax = plt.subplots(1, 1, figsize=(5*n_components, 5*n_components))
     ax = Axes3D(fig, auto_add_to_figure=False)
     fig.add_axes(ax)
@@ -232,8 +232,12 @@ def DisplayManifold3D(manifolded, n_components=3, s=10, c=None):
     z = manifolded[:, 2]
 
     try:
-        ax.scatter(x, y, z, c=c[:len(manifolded)], cmap=sns.color_palette(
+        scatter = ax.scatter(x, y, z, c=c[:len(manifolded)], cmap=sns.color_palette(
             'rainbow', as_cmap=True), alpha=0.8, s=s)
+        # produce a legend with the unique colors from the scatter
+        legend = ax.legend(*scatter.legend_elements(), bbox_to_anchor=(.86, .78),
+                    loc="upper left", title="Clusters")
+        ax.add_artist(legend)
     except:
         ax.scatter(x, y, z, alpha=0.8, s=s)
 
@@ -241,9 +245,7 @@ def DisplayManifold3D(manifolded, n_components=3, s=10, c=None):
     ax.set_xlabel('C1', fontsize=24)
     ax.set_ylabel('C2', fontsize=24)
     ax.set_zlabel('C3', fontsize=24)
-
-    ax.set_title(
-        'Projection des individus')
+    ax.set_title(str(title) if title != None else 'Projection des individus', fontsize=30, y=1)
     plt.show()
 
 

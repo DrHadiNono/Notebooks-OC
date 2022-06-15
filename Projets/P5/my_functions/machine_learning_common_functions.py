@@ -6,7 +6,7 @@ from scipy.cluster.hierarchy import dendrogram
 from sklearn.metrics import mean_squared_error, mean_squared_log_error, r2_score, davies_bouldin_score, silhouette_score, calinski_harabasz_score
 
 from my_functions.common_functions import *
-from my_functions.dimensionality_reduction_functions import PCA
+from my_functions.dimensionality_reduction_functions import PCA, DisplayManifold3D
 
 import timeit
 
@@ -175,7 +175,7 @@ def display_scores(Perfs, yloc=0.92, y=None, hue=None, width=None, height=None, 
         width, height), sharex=False, sharey=False)
     # ajuster l'espace entre les graphiques.
     fig.subplots_adjust(wspace=wspace, hspace=hspace)
-    fig.suptitle('Evaluation' + ((' ('+y+')') if y != None and y != '' else ''), x=0.5, y=yloc, fontsize=24,
+    fig.suptitle('Scores' + ((' ('+y+')') if y != None and y != '' else ''), x=0.5, y=yloc, fontsize=24,
                  horizontalalignment='center')  # Titre globale de la figure
 
     rotation = (8 if hue == None else 5) if rotation == None else rotation
@@ -186,6 +186,7 @@ def display_scores(Perfs, yloc=0.92, y=None, hue=None, width=None, height=None, 
             ax.bar_label(i,)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=rotation)
         ax.set_xlabel('', fontsize=0)
+        ax.set_ylabel(ax.get_ylabel(), fontsize=14)
     plt.show()
 
 
@@ -237,7 +238,7 @@ def OrdinalEncoding(data, col):
     return data
 
 
-def clustering(data, model, model_name, Perfs=None, scale='std', scores=None, hue=None, display_components=3):
+def clustering(data, model, model_name, projection=None, Perfs=None, scale='std', scores=None, hue=None, display_components=3, categories=None):
     print('--------------------', model_name, '--------------------')
     # Nombre de clusters souhaités (taux  de compression)
     data = data[colsOfType(data)]  # garder les colonnes numériques uniquement
@@ -255,7 +256,10 @@ def clustering(data, model, model_name, Perfs=None, scale='std', scores=None, hu
 
     # Clustering
     start_time = timeit.default_timer()
-    model = model.fit(X_scaled)
+    if categories == None:
+        model = model.fit(X_scaled)
+    else:
+        model = model.fit(X, categorical=categories)
     elapsed = timeit.default_timer() - start_time
     labels = model.labels_
 
@@ -265,7 +269,7 @@ def clustering(data, model, model_name, Perfs=None, scale='std', scores=None, hu
             stop = True
     except:
         pass
-    if not stop :
+    if not stop:
         # Evaluatation
         i = len(Perfs)
         Perfs.loc[i, 'Model'] = model_name
@@ -289,7 +293,16 @@ def clustering(data, model, model_name, Perfs=None, scale='std', scores=None, hu
         print(Perfs.loc[i])
 
     if display_components > 1:
-        DisplayClustering(data, labels, scale, display_components)
+        try:
+            if projection != None:
+                DisplayManifold3D(
+                    projection, c=model.labels_, title=model_name)
+            else:
+                DisplayClustering(data, labels, scale, display_components)
+        except:
+            DisplayManifold3D(
+                projection, c=model.labels_, title=model_name)
+
     return model
 
 
