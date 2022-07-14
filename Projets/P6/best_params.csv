@@ -1,0 +1,10 @@
+Model,max_length,size,ARI,time
+Word2Vec,80,110,0.6129,7
+FastText,40,630,0.5804,254
+bert-base-uncased_HF,20,5,0.4941,10
+roberta-base_HF,20,25,0.4341,9
+distilbert-base-uncased_HF,30,5,0.5027,26
+bert-base-uncased_TFhub,20,5,0.5047,17
+roberta-base_TFhub,60,20,0.4091,10
+distilbert-base-uncased_TFhub,30,15,0.4903,7
+USE,0,5,0.568,4

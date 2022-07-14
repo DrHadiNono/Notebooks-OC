@@ -367,18 +367,19 @@ def OvA_ROC(data, cls, y):
 
     # Learn to predict each class against the other
     classifier = OneVsRestClassifier(cv_cls, n_jobs=-1)
-    y_score = classifier.fit(X_train, y_train).decision_function(X_test)
+    y_predicted = classifier.fit(X_train, y_train).predict(X_test)
 
     # Compute ROC curve and ROC area for each class
     fpr = dict()
     tpr = dict()
     roc_auc = dict()
     for i in range(n_classes):
-        fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_score[:, i])
+        fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_predicted[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
 
     # Compute micro-average ROC curve and ROC area
-    fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_score.ravel())
+    fpr["micro"], tpr["micro"], _ = roc_curve(
+        y_test.ravel(), y_predicted.ravel())
     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
     # First aggregate all false positive rates
     all_fpr = np.unique(np.concatenate([fpr[i] for i in range(n_classes)]))
@@ -417,3 +418,5 @@ def OvA_ROC(data, cls, y):
     plt.title("Some extension of Receiver operating characteristic to multiclass")
     plt.legend(loc="lower right")
     plt.show()
+
+    return roc_auc["micro"]
