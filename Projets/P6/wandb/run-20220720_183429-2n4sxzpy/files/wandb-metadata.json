@@ -1,0 +1,23 @@
+{
+    "os": "Windows-10-10.0.19044-SP0",
+    "python": "3.9.7",
+    "heartbeatAt": "2022-07-20T16:34:36.006425",
+    "startedAt": "2022-07-20T16:34:29.941927",
+    "docker": null,
+    "gpu": "NVIDIA GeForce GTX 1080",
+    "gpu_count": 1,
+    "cpu_count": 8,
+    "cuda": null,
+    "args": null,
+    "state": "running",
+    "program": "<python with no main file>",
+    "git": {
+        "remote": null,
+        "commit": "029e387d96f07d259020698deca9cff71d0ea897"
+    },
+    "email": "el-hadi.nono@hotmail.fr",
+    "root": "C:/Users/Shadow/OneDrive - Universit\u00e9 de Poitiers/Documents/OpenClassrooms/Projets/Notebooks OC",
+    "host": "SHADOW-AMDUS0DC",
+    "username": "Shadow",
+    "executable": "c:\\Python39\\python.exe"
+}

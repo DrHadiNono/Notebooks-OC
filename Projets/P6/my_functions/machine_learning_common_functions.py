@@ -25,12 +25,11 @@ def plot_dendrogram(Z, names):
     plt.show()
 
 
-def trainning_sets(data, Y, train_size=0.8, random_state=None, shuffle=True, sampling_factor=1, scale=None, scale_y=False):
+def trainning_sets(data, Y, train_size=0.8, validation_size=0, random_state=None, shuffle=True, sampling_factor=1, scale=None, scale_y=False):
     if sampling_factor < 1:
         data_size = len(data)
         sample_size = int(data_size*sampling_factor)
         # print('Original data size:', data_size, 'Sample data size:', sample_size)
-
         sample = np.random.choice(data_size, size=sample_size, replace=False)
         data = data.iloc[sample]
 
@@ -53,24 +52,31 @@ def trainning_sets(data, Y, train_size=0.8, random_state=None, shuffle=True, sam
     else:
         Y = data[Y].values
 
-    # Data Split 5 Trainning sets
+    # Data Split
+    xtrain = xtest = xvalidation = ytrain = yvalidation = ytest = None
     xtrain, xtest, ytrain, ytest = train_test_split(
-        X, Y, train_size=train_size, random_state=random_state, shuffle=shuffle)
+        X, Y, train_size=train_size+validation_size, random_state=random_state, shuffle=shuffle)
+    if validation_size > 0:
+        xtrain, xvalidation, ytrain, yvalidation = train_test_split(
+            X, Y, train_size=train_size/(train_size+validation_size), random_state=random_state, shuffle=shuffle)
 
     # Data Scaling. Training and Test sets scaled one after another to avoid data leakage
-    if scale == 'std':
-        xtrain = Std_Scaled(xtrain)
-        xtest = Std_Scaled(xtest)
-    if scale == 'min-max':
-        xtrain = MinMax_Scaled(xtrain)
-        xtest = MinMax_Scaled(xtest)
-    if scale == 'robust':
-        xtrain = Robust_Scaled(xtrain)
-        xtest = Robust_Scaled(xtest)
-    if scale == 'power':
-        xtrain = PowerTransformer_Scaled(xtrain)
-        xtest = PowerTransformer_Scaled(xtest)
+    if scale != None:
+        if scale == 'std':
+            scaler = Std_Scaled
+        if scale == 'min-max':
+            scaler = MinMax_Scaled
+        if scale == 'robust':
+            scaler = Robust_Scaled
+        if scale == 'power':
+            scaler = PowerTransformer_Scaled
+        xtrain = scaler(xtrain)
+        xtest = scaler(xtest)
+        if validation_size > 0:
+            xvalidation = scaler(xvalidation)
 
+    if validation_size > 0:
+        return xtrain, xvalidation, xtest, ytrain, yvalidation, ytest
     return xtrain, xtest, ytrain, ytest
 
 
@@ -420,3 +426,65 @@ def OvA_ROC(data, cls, y):
     plt.show()
 
     return roc_auc["micro"]
+
+
+def plot_hist(hist, metric, metric_val):
+    plt.plot(hist.history[metric])
+    plt.plot(hist.history[metric_val])
+    plt.title("model "+metric)
+    plt.ylabel(metric)
+    plt.xlabel("epoch")
+    plt.legend(["train", "validation"], loc="upper left")
+    plt.show()
+
+
+def AUC(n_classes, y_test, y_predict):
+    # Compute ROC curve and ROC area for each class
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_predict[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+    # Compute micro-average ROC curve and ROC area
+    fpr["micro"], tpr["micro"], _ = roc_curve(
+        y_test.ravel(), y_predict.ravel())
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+    # First aggregate all false positive rates
+    all_fpr = np.unique(np.concatenate([fpr[i] for i in range(n_classes)]))
+
+    # Then interpolate all ROC curves at this points
+    mean_tpr = np.zeros_like(all_fpr)
+    for i in range(n_classes):
+        mean_tpr += np.interp(all_fpr, fpr[i], tpr[i])
+
+    # Finally average it and compute AUC
+    mean_tpr /= n_classes
+
+    fpr["macro"] = all_fpr
+    tpr["macro"] = mean_tpr
+    roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+
+    # Plot all ROC curves
+    lw = 2
+    plt.figure(figsize=(7, 6))
+
+    plt.plot(fpr["micro"], tpr["micro"], label="micro-average ROC curve (area = {0:0.2f})".format(
+        roc_auc["micro"]), color="deeppink", linestyle=":", linewidth=4)
+    plt.plot(fpr["macro"], tpr["macro"], label="macro-average ROC curve (area = {0:0.2f})".format(
+        roc_auc["macro"]), color="navy", linestyle=":", linewidth=4)
+
+    colors = cycle(["aqua", "darkorange", "cornflowerblue"])
+    for i, color in zip(range(n_classes), colors):
+        plt.plot(fpr[i], tpr[i], color=color, lw=lw,
+                 label="ROC curve of class {0} (area = {1:0.2f})".format(i, roc_auc[i]))
+
+    plt.plot([0, 1], [0, 1], "k--", lw=lw)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("Some extension of Receiver operating characteristic to multiclass")
+    plt.legend(loc="lower right")
+    plt.show()
