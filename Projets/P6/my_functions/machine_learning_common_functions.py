@@ -190,6 +190,8 @@ def display_scores(Perfs, yloc=0.92, y=None, hue=None, width=None, height=None, 
     for i in range(0, len(scores)):
         ax = axes[i]
         sns.barplot(data=Perfs, ax=ax, x=Perfs['Model'], y=scores[i], hue=hue)
+        if hue != None:
+            ax.legend(loc='center right')
         for i in ax.containers:
             ax.bar_label(i,)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=rotation)
@@ -429,13 +431,23 @@ def OvA_ROC(data, cls, y):
 
 
 def plot_hist(hist, metric, metric_val):
-    plt.plot(hist.history[metric])
-    plt.plot(hist.history[metric_val])
-    plt.title("model "+metric)
-    plt.ylabel(metric)
-    plt.xlabel("epoch")
-    plt.legend(["train", "validation"], loc="upper left")
-    plt.show()
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
+
+    # Metric plot
+    ax1.plot(hist.history[metric])
+    ax1.plot(hist.history[metric_val])
+    ax1.set_title("model "+metric)
+    ax1.set_ylabel(metric)
+    ax1.set_xlabel("epoch")
+    ax1.legend(["train", "validation"], loc="upper right")
+
+    # Loss Plot
+    ax2.plot(hist.history['loss'])
+    ax2.plot(hist.history['val_loss'])
+    ax2.set_title("model loss")
+    ax2.set_ylabel("loss")
+    ax2.set_xlabel("epoch")
+    ax2.legend(["train", "validation"], loc="upper right")
 
 
 def AUC(n_classes, y_test, y_predict):
