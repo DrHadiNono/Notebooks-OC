@@ -3,9 +3,6 @@ aiohttp==3.8.1
 aiosignal==1.2.0
 alabaster
 altair==4.2.0
-anaconda-client
-anaconda-navigator==2.1.1
-anaconda-project
 anyio==3.6.1
 appdirs==1.4.4
 argh==0.26.2
