@@ -236,7 +236,7 @@ pyls-spyder==0.4.0
 Pympler==1.0.1
 PyNaCl
 pynndescent==0.5.7
-pyodbc===4.0.0-unsupported
+pyodbc
 pyOpenSSL
 pyparsing
 pyreadline==2.1
