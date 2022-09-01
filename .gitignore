@@ -1,5 +1,6 @@
 *.csv
 *.pkl
+!Projets/P7/*/*.pkl
 Projets/P6/Flipkart/
 Projets/P6/openai_key.txt
 Projets/P6/HF_API_TOKEN.txt
