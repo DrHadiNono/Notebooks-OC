@@ -4,13 +4,11 @@
 import uvicorn
 from fastapi import FastAPI
 from HomeCreditApplicants import HomeCreditApplicant
-import numpy as np
 import pickle
-import pandas as pd
+
 # 2. Create the app object
 app = FastAPI()
-pickle_in = open("model.pkl", "rb")
-classifier = pickle.load(pickle_in)
+classifier = pickle.load(open("model.pkl", "rb"))
 
 # 3. Index route, opens automatically on http://127.0.0.1:8000
 
