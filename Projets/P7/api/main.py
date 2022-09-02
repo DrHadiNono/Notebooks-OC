@@ -9,7 +9,7 @@ import pickle
 import pandas as pd
 # 2. Create the app object
 app = FastAPI()
-pickle_in = open("lgbm.pkl", "rb")
+pickle_in = open("model.pkl", "rb")
 classifier = pickle.load(pickle_in)
 
 # 3. Index route, opens automatically on http://127.0.0.1:8000
@@ -24,22 +24,22 @@ def index():
 #    JSON data and return the predicted Bank Note with the confidence
 
 @app.post('/predict')
-def predict_score(data: HomeCreditApplicant):
+def predict_score():  # data: HomeCreditApplicant
     # data = data.dict()
     # variance = data['variance']
     # skewness = data['skewness']
     # curtosis = data['curtosis']
     # entropy = data['entropy']
 
-    data = HomeCreditApplicant()
+    applicant = HomeCreditApplicant()
    # print(classifier.predict([[variance,skewness,curtosis,entropy]]))
-    prediction = classifier.predict_prob([data.get_values()])
+    prediction = classifier.predict_proba([applicant.get_values()])
     # if(prediction[0] > 0.5):
     #     prediction = "Fake note"
     # else:
     #     prediction = "Its a Bank note"
     return {
-        'prediction': prediction
+        'prediction': [{0: pred[0], 1: pred[1]} for pred in prediction]
     }
 
 

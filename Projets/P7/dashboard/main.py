@@ -12,6 +12,15 @@ async def fetch(session, url):
         return {}
 
 
+async def post(session, url, data):
+    try:
+        async with session.post(url, data=data) as response:
+            result = await response.json()
+            return result
+    except Exception:
+        return {}
+
+
 async def main():
     st.write("""
     # Home Credit Dashboard
@@ -20,17 +29,23 @@ async def main():
 
     """)
 
+    # async with aiohttp.ClientSession() as session:
+    #     data = await fetch(session, 'https://homecredit-api-oc.herokuapp.com/')
+    #     if data:
+    #         st.write(data)
+    #     else:
+    #         st.error("Error")
+
     async with aiohttp.ClientSession() as session:
-        data = await fetch(session, 'https://homecredit-dashboard-oc.herokuapp.com/predict')
+        # 'https://homecredit-api-oc.herokuapp.com/predict')
+        data = await post(session, 'http://127.0.0.1:8000/predict', None)
         if data:
             st.write(data)
         else:
             st.error("Error")
 
-
 if __name__ == '__main__':
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
 
 # #define the ticker symbol
 # tickerSymbol = 'GOOGL'
