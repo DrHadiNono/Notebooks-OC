@@ -8,7 +8,9 @@ import pickle
 
 # 2. Create the app object
 app = FastAPI()
-# classifier = pickle.load(open("model.pkl", "rb"))
+pckl = open("model.pkl", "rb")
+classifier = pickle.load()
+del pckl
 
 # 3. Index route, opens automatically on http://127.0.0.1:8000
 
@@ -31,14 +33,14 @@ def predict_score():  # data: HomeCreditApplicant
 
     applicant = HomeCreditApplicant()
    # print(classifier.predict([[variance,skewness,curtosis,entropy]]))
-    # prediction = classifier.predict_proba([applicant.get_values()])
+    prediction = classifier.predict_proba([applicant.get_values()])
     # if(prediction[0] > 0.5):
     #     prediction = "Fake note"
     # else:
     #     prediction = "Its a Bank note"
     return {
-        # [{0: pred[0], 1: pred[1]} for pred in prediction]
-        'prediction': 'pred'
+        [{0: pred[0], 1: pred[1]} for pred in prediction]
+        # 'prediction': 'pred'
     }
 
 
