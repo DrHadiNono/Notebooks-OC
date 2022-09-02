@@ -9,7 +9,7 @@ import pickle
 # 2. Create the app object
 app = FastAPI()
 pckl = open("model.pkl", "rb")
-classifier = pickle.load()
+classifier = pickle.load(pckl)
 del pckl
 
 # 3. Index route, opens automatically on http://127.0.0.1:8000
