@@ -4,10 +4,17 @@
 import uvicorn
 from fastapi import FastAPI
 from HomeCreditApplicants import HomeCreditApplicant
+from sklearn.metrics import roc_auc_score
 import pickle
 
 # 2. Create the app object
 app = FastAPI()
+
+
+def MyScore(y_test, y_pred):
+    return roc_auc_score(y_test, y_pred)
+
+
 pckl = open("model.pkl", "rb")
 classifier = pickle.load(pckl)
 del pckl
