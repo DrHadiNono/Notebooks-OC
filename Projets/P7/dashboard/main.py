@@ -29,16 +29,16 @@ async def main():
 
     """)
 
-    # async with aiohttp.ClientSession() as session:
-    #     data = await fetch(session, 'https://homecredit-api-oc.herokuapp.com/')
-    #     if data:
-    #         st.write(data)
-    #     else:
-    #         st.error("Error")
+    async with aiohttp.ClientSession() as session:
+        data = await fetch(session, 'https://homecredit-api-oc.herokuapp.com/')
+        if data:
+            st.write(data)
+        else:
+            st.error("Error")
 
     async with aiohttp.ClientSession() as session:
         # 'https://homecredit-api-oc.herokuapp.com/predict')
-        data = await post(session, 'http://127.0.0.1:8000/predict', None)
+        data = await post(session, 'https://homecredit-api-oc.herokuapp.com/predict', None)
         if data:
             st.write(data)
         else:
