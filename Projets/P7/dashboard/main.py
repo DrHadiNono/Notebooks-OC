@@ -1,6 +1,10 @@
 import streamlit as st
 import aiohttp
 import asyncio
+# import traceback
+
+dashboard_url = 'https://homecredit-api-oc.herokuapp.com/'
+# dashboard_url = 'http://127.0.0.1:8000/'
 
 
 async def fetch(session, url):
@@ -14,10 +18,10 @@ async def fetch(session, url):
 
 async def post(session, url, data):
     try:
-        async with session.post(url, data=data) as response:
-            result = await response.json()
-            return result
+        async with session.post(url, params=data) as response:
+            return await response.json()
     except Exception:
+        # traceback.print_exc()
         return {}
 
 
@@ -29,31 +33,16 @@ async def main():
 
     """)
 
+    ids = []
     async with aiohttp.ClientSession() as session:
-        data = await fetch(session, 'https://homecredit-api-oc.herokuapp.com/')
-        if data:
-            st.write(data)
-        else:
-            st.error("Error")
+        ids = await fetch(session, dashboard_url+'ids')
+    id = st.selectbox(label='ID client', options=ids)
 
+    score = -1
     async with aiohttp.ClientSession() as session:
-        # 'https://homecredit-api-oc.herokuapp.com/predict')
-        data = await post(session, 'https://homecredit-api-oc.herokuapp.com/predict', None)
-        if data:
-            st.write(data)
-        else:
-            st.error("Error")
+        score = await post(session, dashboard_url+'predict', {'id': id})
+    if score >= 0:
+        st.metric(label="Score", value=str(round(score*100, 2))+'%')
 
 if __name__ == '__main__':
     asyncio.run(main())
-
-# #define the ticker symbol
-# tickerSymbol = 'GOOGL'
-# #get data on this ticker
-# tickerData = yf.Ticker(tickerSymbol)
-# #get the historical prices for this ticker
-# tickerDf = tickerData.history(period='1d', start='2010-5-31', end='2020-5-31')
-# # Open	High	Low	Close	Volume	Dividends	Stock Splits
-
-# st.line_chart(tickerDf.Close)
-# st.line_chart(tickerDf.Volume)

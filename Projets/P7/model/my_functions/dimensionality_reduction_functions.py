@@ -313,11 +313,20 @@ def DimensionalityReduction(data, n_comp=5, cols=None, method='pca', return_xsca
         return ca
 
 
-def ComponentsAnalysis(data, n_comp=5, cols=None, method=None, heigth=10, width=10):
-    n_comp = min(n_comp, len(colsOfType(data)))
-    fa = DimensionalityReduction(data, n_comp, cols, method)
-    components = fa.components_
+def ComponentsAnalysis(data, n_comp=5, components=None, cols=None, method=None, heigth=10, width=10):
+    compute_pcs = False
+    try:
+        if components==None:
+            compute_pcs = True
+    except:
+        pass
 
+    if compute_pcs:
+        n_comp = min(n_comp, len(colsOfType(data)))
+        fa = DimensionalityReduction(data, n_comp, cols, method)
+        components = fa.components_
+
+    n_comp = len(components)
     vmax = np.abs(components).max()
     # initialisation de la figure
     fig, ax = plt.subplots(figsize=(width, heigth))

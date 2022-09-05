@@ -168,36 +168,70 @@ def correlation_matrix(data, corr_seuil=0, squared=True, triangle=True, sort=Fal
         corr = corr**2
     corr = corr[abs(corr) >= corr_seuil]
 
-    if sort:
-        corr = corr.sort_index(axis=0).sort_index(axis=1)
+    if len(corr) > 0:
+        if sort:
+            corr = corr.sort_index(axis=0).sort_index(axis=1)
 
-    pvalues = None
-    if p_value:
-        # Calculer les p-values pour la pertinence des corrélations
-        pvalues = []
-        for col1 in corr.columns:
-            p = []
-            for col2 in corr.columns:
-                pvalue = round(pearsonr(data[col1], data[col2])[1], 3)
-                p.append(pvalue)
-            pvalues.append(p)
+        pvalues = None
+        if p_value:
+            # Calculer les p-values pour la pertinence des corrélations
+            pvalues = []
+            for col1 in corr.columns:
+                p = []
+                for col2 in corr.columns:
+                    pvalue = round(pearsonr(data[col1], data[col2])[1], 3)
+                    p.append(pvalue)
+                pvalues.append(p)
 
-    mask = None
-    if triangle:
-        # Generate a mask for the upper triangle
-        mask = np.triu(np.ones_like(corr, dtype=bool))
+        mask = None
+        if triangle:
+            # Generate a mask for the upper triangle
+            mask = np.triu(np.ones_like(corr, dtype=bool))
 
-    # Set up the matplotlib figure
-    f, ax = plt.subplots(figsize=(max(11, len(cols)/3), max(9, len(cols)/3)))
+        # Set up the matplotlib figure
+        f, ax = plt.subplots(
+            figsize=(max(11, len(cols)/3), max(9, len(cols)/3)))
 
-    # Generate a custom diverging colormap
-    cmap = sns.diverging_palette(230, 20, as_cmap=True)
+        # Generate a custom diverging colormap
+        cmap = sns.diverging_palette(230, 20, as_cmap=True)
 
-    # Draw the heatmap with the mask and correct aspect ratio
-    sns.heatmap(corr, mask=mask, cmap=cmap, vmax=1, center=0, annot=pvalues,
-                square=True, linewidths=0.01, cbar_kws={'shrink': .5, 'label': 'Pearson Correlation (r'+('²' if squared else '')+')'})
-    plt.title('Correlations', fontsize=24)
-    plt.show()
+        # Draw the heatmap with the mask and correct aspect ratio
+        sns.heatmap(corr, mask=mask, cmap=cmap, vmax=1, center=0, annot=pvalues,
+                    square=True, linewidths=0.01, cbar_kws={'shrink': .5, 'label': 'Pearson Correlation (r'+('²' if squared else '')+')'})
+        plt.title('Correlations', fontsize=24)
+        plt.show()
+    return corr
+
+
+def removeCorrelations(corrs):
+    cols_drop = set()
+    cols_corr = {}
+    cols_corr_bis = {}
+
+    sorted_corrs = pd.DataFrame(corrs.count(
+        axis=1).sort_values(ascending=False), columns=['Count'])
+    cols = sorted_corrs.index.tolist()
+    for col in cols:
+        cols_corr[col] = set()
+        cols_corr_bis[col] = set()
+        for col2 in cols:
+            if col != col2 and corrs.loc[col, col2] > 0:
+                cols_corr[col].add(col2)
+                cols_corr_bis[col].add(col2)
+
+    # cols_corr_bis = cols_corr.copy()
+    for col in cols:
+        for col2 in cols_corr[col]:
+            if col2 in cols_corr and col2 not in cols_drop:
+                cols_corr_bis[col2].remove(col)
+        cols_drop.add(col)
+
+    cols_drop = set()
+    for col in cols:
+        if len(cols_corr_bis[col]) > 0:
+            cols_drop.add(col)
+
+    return list(cols_drop)
 
 
 def eta_squared(x, y):

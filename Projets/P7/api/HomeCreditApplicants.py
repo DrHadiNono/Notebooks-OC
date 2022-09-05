@@ -9,24 +9,24 @@ class HomeCreditApplicant(BaseModel):
     features = OrderedDict()
 
     # default constructor
-    def __init__(self):
+    def __init__(self, data={}):
         super().__init__()
         # Retreive all the columns used as features in the model
         cols = []
         with open("cols.txt", "r") as f:
             cols = f.read().split()
 
-        # Fill the features with random values first
-        for col in cols:
-            self.features[col] = np.random.uniform(0, 1)
+        if data == {}:
+            # Fill the features with random values first
+            for col in cols:
+                self.features[col] = np.random.uniform(0, 1)
+        else:
+            for col in cols:
+                self.features[col] = data[col]
 
     def get_values(self):
         values = []
-        for _, value in self.features.items():
-            values.append(value)
+        for key, value in self.features.items():
+            if key not in ['SK_ID_CURR', 'TARGET']:
+                values.append(value)
         return values
-
-
-# test = HomeCreditApplicant()
-# print(test.features)
-# print(test.get_values())
