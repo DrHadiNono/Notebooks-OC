@@ -1,3 +1,4 @@
+from socket import socket
 import streamlit as st
 import aiohttp
 import asyncio
@@ -38,11 +39,12 @@ async def main():
         ids = await fetch(session, dashboard_url+'ids')
     id = st.selectbox(label='ID client', options=ids)
 
-    score = -1
     async with aiohttp.ClientSession() as session:
         score = await post(session, dashboard_url+'predict', {'id': id})
-    if score >= 0:
-        st.metric(label="Score", value=str(round(score*100, 2))+'%')
+        if score:
+            st.metric(label="Score", value=str(round(score*100, 2))+'%')
+        else:
+            st.error(score)
 
 if __name__ == '__main__':
     asyncio.run(main())
