@@ -39,7 +39,7 @@ async def post(session, url, data):
 # @st.experimental_memo(suppress_st_warning=True)
 
 
-async def load_applicant(applicant, nb_features, explainer):
+async def load_applicant(applicant, nb_features, explainer, model):
     st.write('## Client Sélectionné')
     st.dataframe(applicant, width=1500)
 
@@ -48,15 +48,16 @@ async def load_applicant(applicant, nb_features, explainer):
     async with aiohttp.ClientSession() as session:
         score = await post(session, dashboard_url+'scoreApplicant', {'applicant': dillEncode(applicant.to_dict('records')[0])})
         if score:
-            st.metric('',
-                      str(round(score*100, 2))+'%')
+            pass
         else:
-            st.error(score)
+            score = model.predict_proba(applicant.values)[0][1]
+        st.metric('',
+                  str(round(score*100, 2))+'%')
 
         st.write('#### Détails')
         shap_explanation = explainer(applicant)[0]
         st.pyplot(shap.plots.waterfall(
-                shap_explanation, max_display=nb_features))
+            shap_explanation, max_display=nb_features))
 
         # shap_explanation = await post(session, dashboard_url+'shapExplanationApplicant', {'applicant': dillEncode(applicant.to_dict())})
         # if shap_explanation:
@@ -89,10 +90,10 @@ async def main():
             st.error(model)
 
         # Compute SHAP values
-        explainer = shap.TreeExplainer(model, df.drop(columns='SK_ID_CURR'), model_output='probability')
+        explainer = shap.TreeExplainer(model, df.drop(
+            columns='SK_ID_CURR'), model_output='probability')
         expected_value = explainer.expected_value
 
-    
         # Gat SHAP expected_value
         # expected_value = await fetch(session, dashboard_url+'expectedValue')
         # if expected_value:
@@ -131,7 +132,7 @@ async def main():
             feature, min, max, value)
     features_form_submit_button = features_form.form_submit_button('ok')
 
-    await load_applicant(applicant.drop(columns='SK_ID_CURR'), nb_features, explainer)
+    await load_applicant(applicant.drop(columns='SK_ID_CURR'), nb_features, explainer, model)
 
 
 if __name__ == '__main__':
