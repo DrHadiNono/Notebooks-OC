@@ -7,8 +7,8 @@ import codecs
 import shap
 # import traceback
 
-dashboard_url = 'https://homecredit-api-oc.herokuapp.com/'
-# dashboard_url = 'http://127.0.0.1:8000/'
+# dashboard_url = 'https://homecredit-api-oc.herokuapp.com/'
+dashboard_url = 'http://127.0.0.1:8000/'
 
 
 def dillDecode(data):
@@ -36,47 +36,11 @@ async def post(session, url, data):
         # traceback.print_exc()
         return {}
 
+# @st.experimental_memo(suppress_st_warning=True)
 
-async def main():
-    st.set_option('deprecation.showPyplotGlobalUse', False)
 
-    st.write("# Dashboard Prêt à dépenser")
-
-    async with aiohttp.ClientSession() as session:
-        data = await fetch(session, dashboard_url+'data')
-        df = pd.DataFrame.from_dict(data, orient='tight')
-        st.dataframe(df, width=1500)
-
-    async with aiohttp.ClientSession() as session:
-        expected_value = await fetch(session, dashboard_url+'expectedValue')
-        if expected_value:
-            expected_value = dillDecode(expected_value)
-        else:
-            st.error(expected_value)
-
-    st.write('## Client')
-
-    ids = []
-    async with aiohttp.ClientSession() as session:
-        ids = await fetch(session, dashboard_url+'ids')
-    id = st.selectbox(label='ID client', options=ids)
-    idx = ids.index(id)
-
-    applicant = df[df.SK_ID_CURR == id]
-    feature = st.selectbox(label='Valeur', options=df.drop(
-        columns='SK_ID_CURR').columns)
-    min = df[feature].min()
-    max = df[feature].max()
-    if max == 1:
-        step = 1
-        value = int(applicant[feature].values[0])
-    else:
-        step = 0.01
-        value = float(applicant[feature].values[0])
-
-    applicant.loc[applicant.SK_ID_CURR == id, feature] = st.number_input(
-        '', min, max, value)
-
+async def load_applicant(applicant, nb_features):
+    st.write('## Client Sélectionné')
     st.dataframe(applicant, width=1500)
 
     st.write('## Prediction')
@@ -90,8 +54,7 @@ async def main():
             st.error(score)
 
     st.write('#### Détails')
-    nb_features = st.number_input(
-        'Nombre de variables', 1, len(list(df))-1, 20)
+
     async with aiohttp.ClientSession() as session:
         shap_explanation = await post(session, dashboard_url+'shapExplanationApplicant', {'applicant': dillEncode(applicant.to_dict())})
         if shap_explanation:
@@ -101,23 +64,59 @@ async def main():
         else:
             st.error(shap_explanation)
 
-    # async with aiohttp.ClientSession() as session:
-    #     shap_values = await fetch(session, dashboard_url+'shapValues')
-    #     if shap_values:
-    #         shap_values = dillDecode(shap_values)
-    #         st.pyplot(shap.summary_plot(shap_values, df.drop(
-    #             columns='SK_ID_CURR'), plot_type="bar", max_display=20))
-    #     else:
-    #         st.error(shap_values)
 
-    # async with aiohttp.ClientSession() as session:
-    #     shap_value = await post(session, dashboard_url+'shapValue', {'idx': idx})
-    #     if shap_value:
-    #         shap_value = dillDecode(shap_value)
-    #         st.pyplot(shap.plots.force(expected_value, shap_value,
-    #                   df.iloc[idx, 1:], feature_names=df.columns.tolist()[1:], matplotlib=True))
-    #     else:
-    #         st.error(shap_value)
+async def main():
+    st.set_option('deprecation.showPyplotGlobalUse', False)
+
+    async with aiohttp.ClientSession() as session:
+        data = await fetch(session, dashboard_url+'data')
+        df = pd.DataFrame.from_dict(data, orient='tight')
+        for col in list(df):
+            if df[col].max() == 1:
+                df[col] = df[col].astype(int)
+        st.write("# Dashboard Prêt à dépenser")
+        st.write('## Clients')
+        st.dataframe(df, width=1500)
+
+    async with aiohttp.ClientSession() as session:
+        expected_value = await fetch(session, dashboard_url+'expectedValue')
+        if expected_value:
+            expected_value = dillDecode(expected_value)
+        else:
+            st.error(expected_value)
+
+    # Inputs to the sidebar
+
+    settings_form = st.sidebar.form(key='settings_form')
+    # Number of features for SHAP
+    nb_features = settings_form.number_input(
+        'Nombre de variables affichées', 1, len(list(df))-1, 4)
+    # Applicants IDs
+    ids = []
+    async with aiohttp.ClientSession() as session:
+        ids = await fetch(session, dashboard_url+'ids')
+    id = settings_form.selectbox(label='ID client', options=ids)
+    idx = ids.index(id)
+    settings_form_submit_button = settings_form.form_submit_button('ok')
+
+    features_form = st.sidebar.form(key='features_form')
+    # Applicants features
+    applicant = df[df.SK_ID_CURR == id]
+    # features = []
+    for i in range(nb_features):
+        feature = df.drop(
+            columns='SK_ID_CURR').columns.tolist()[i]
+        min = df[feature].min()
+        max = df[feature].max()
+        if max == 1:
+            value = int(applicant[feature].values[0])
+        else:
+            value = float(applicant[feature].values[0])
+        applicant.loc[applicant.SK_ID_CURR == id, feature] = features_form.number_input(
+            feature, min, max, value)
+    features_form_submit_button = features_form.form_submit_button('ok')
+
+    await load_applicant(applicant, nb_features)
 
 
 if __name__ == '__main__':

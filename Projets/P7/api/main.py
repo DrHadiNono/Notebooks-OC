@@ -31,9 +31,7 @@ ids_list = df['SK_ID_CURR'].values.astype(int).tolist()
 
 # Compute SHAP values
 explainer = shap.TreeExplainer(model, X, model_output='probability')
-shap_explanations = explainer(X)
 expected_value = explainer.expected_value
-shap_values = explainer.shap_values(X)
 
 
 def predict(applicant: HomeCreditApplicant):
@@ -91,19 +89,10 @@ def expectedValue():
     return dillEncode(expected_value)
 
 
-@app.get('/shapValues')
-def shapValues():
-    return dillEncode(shap_values)
-
-
-@app.post('/shapValue')
-def shapValue(idx: int):
-    return dillEncode(shap_values[idx][0])
-
-
-@app.post('/shapExplanationIDX')
-def shapExplanationIDX(idx: int):
-    return dillEncode(shap_explanations[idx])
+@app.post('/shapExplanationID')
+def shapExplanationID(id: int):
+    applicant = df[df['SK_ID_CURR'] == id].drop(columns='SK_ID_CURR')
+    return dillEncode(explainer(applicant)[0])
 
 
 @app.post('/shapExplanationApplicant')
