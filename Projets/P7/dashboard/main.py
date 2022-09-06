@@ -39,7 +39,7 @@ async def post(session, url, data):
 # @st.experimental_memo(suppress_st_warning=True)
 
 
-async def load_applicant(applicant, nb_features, explainer, model):
+async def load_applicant(applicant, nb_features_shap, explainer, model):
     st.write('## Client Sélectionné')
     st.dataframe(applicant, width=1500)
 
@@ -57,13 +57,13 @@ async def load_applicant(applicant, nb_features, explainer, model):
         st.write('#### Détails')
         shap_explanation = explainer(applicant)[0]
         st.pyplot(shap.plots.waterfall(
-            shap_explanation, max_display=nb_features))
+            shap_explanation, max_display=min(nb_features_shap+1, len(list(applicant)))))
 
         # shap_explanation = await post(session, dashboard_url+'shapExplanationApplicant', {'applicant': dillEncode(applicant.to_dict())})
         # if shap_explanation:
         #     shap_explanation = dillDecode(shap_explanation)
         #     st.pyplot(shap.plots.waterfall(
-        #         shap_explanation, max_display=nb_features))
+        #         shap_explanation, max_display=nb_features_shap))
         # else:
         #     st.error(shap_explanation)
 
@@ -104,21 +104,23 @@ async def main():
     # Inputs to the sidebar
 
     settings_form = st.sidebar.form(key='settings_form')
-    # Number of features for SHAP
-    nb_features = settings_form.number_input(
-        'Nombre de variables affichées', 1, len(list(df))-1, 4)
     # Applicants IDs
     ids = []
     async with aiohttp.ClientSession() as session:
         ids = await fetch(session, dashboard_url+'ids')
     id = settings_form.selectbox(label='ID client', options=ids)
     idx = ids.index(id)
+
+    # Number of features for SHAP
+    nb_features = settings_form.number_input(
+        'Nombre de variables (saisie)', 1, len(list(df))-1, 5)
+    nb_features_shap = settings_form.number_input(
+        'Nombre de variables (détails)', 1, len(list(df))-1, 20)
     settings_form_submit_button = settings_form.form_submit_button('ok')
 
     features_form = st.sidebar.form(key='features_form')
     # Applicants features
     applicant = df[df.SK_ID_CURR == id]
-    # features = []
     for i in range(nb_features):
         feature = df.drop(
             columns='SK_ID_CURR').columns.tolist()[i]
@@ -132,7 +134,7 @@ async def main():
             feature, min, max, value)
     features_form_submit_button = features_form.form_submit_button('ok')
 
-    await load_applicant(applicant.drop(columns='SK_ID_CURR'), nb_features, explainer, model)
+    await load_applicant(applicant.drop(columns='SK_ID_CURR'), nb_features_shap, explainer, model)
 
 
 if __name__ == '__main__':
