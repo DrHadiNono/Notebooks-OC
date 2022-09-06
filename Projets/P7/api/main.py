@@ -5,21 +5,48 @@ import uvicorn
 from fastapi import FastAPI
 from HomeCreditApplicants import HomeCreditApplicant
 import dill
+import codecs
 import pandas as pd
+import shap
 
 # Create the app object
 app = FastAPI()
 
+# Read the model features
 cols = []
 with open("cols.txt", "r") as f:
     cols = f.read().split()
 
-classifier = None
+# Load the model
+model = None
 with open("model.pkl", "rb") as f:
-    classifier = dill.load(f)
+    model = dill.load(f)
 
-df = pd.read_csv('data-sample.csv')
-ids = df['SK_ID_CURR'].values.astype(int).tolist()
+# Load the data
+df = pd.read_csv('data-sample.csv', dtype={'SK_ID_CURR': 'int32',
+                 'GENDER': 'int32', 'OWN_CAR': 'int32', 'OWN_REALTY': 'int32'})
+df = df.drop(columns='TARGET')
+X = df.drop(columns='SK_ID_CURR')
+ids_list = df['SK_ID_CURR'].values.astype(int).tolist()
+
+# Compute SHAP values
+explainer = shap.TreeExplainer(model, X, model_output='probability')
+shap_explanations = explainer(X)
+expected_value = explainer.expected_value
+shap_values = explainer.shap_values(X)
+
+
+def predict(applicant: HomeCreditApplicant):
+    prediction = model.predict_proba([applicant.get_values()])[0]
+    return prediction[1]
+
+
+def dillEncode(data):
+    return codecs.encode(dill.dumps(data), "base64").decode()
+
+
+def dillDecode(data):
+    return dill.loads(codecs.decode(data.encode(), "base64"))
 
 # Index route, opens automatically on http://127.0.0.1:8000
 
@@ -29,24 +56,60 @@ def index():
     return {'message': 'Hello, World'}
 
 
+@app.get('/data')
+def data():
+    return df.to_dict('tight')
+
+
 @app.get('/ids')
-def index():
-    return ids
+def ids():
+    return ids_list
+
 
 # Expose the prediction functionality, make a prediction from the passed
 #    JSON data and return the predicted Bank Note with the confidence
-
 
 @app.post('/applicant')
 def get_applicant(id: int):
     return HomeCreditApplicant(df[df['SK_ID_CURR'] == id].to_dict('records')[0])
 
 
-@app.post('/predict')
-def predict_score(id: int):
+@app.post('/scoreApplicant')
+def scoreApplicant(applicant: str):
+    applicant = HomeCreditApplicant(dillDecode(applicant))
+    return predict(applicant)
+
+
+@app.post('/scoreID')
+def scoreID(id: int):
     applicant = get_applicant(id)
-    prediction = classifier.predict_proba([applicant.get_values()])[0]
-    return prediction[1]
+    return predict(applicant)
+
+
+@app.get('/expectedValue')
+def expectedValue():
+    return dillEncode(expected_value)
+
+
+@app.get('/shapValues')
+def shapValues():
+    return dillEncode(shap_values)
+
+
+@app.post('/shapValue')
+def shapValue(idx: int):
+    return dillEncode(shap_values[idx][0])
+
+
+@app.post('/shapExplanationIDX')
+def shapExplanationIDX(idx: int):
+    return dillEncode(shap_explanations[idx])
+
+
+@app.post('/shapExplanationApplicant')
+def shapExplanationApplicant(applicant: str):
+    applicant = pd.DataFrame.from_dict(dillDecode(applicant))
+    return dillEncode(explainer(applicant.drop(columns='SK_ID_CURR'))[0])
 
 
 # Run the API with uvicorn

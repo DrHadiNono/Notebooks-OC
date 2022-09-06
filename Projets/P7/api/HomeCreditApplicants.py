@@ -15,6 +15,9 @@ class HomeCreditApplicant(BaseModel):
         cols = []
         with open("cols.txt", "r") as f:
             cols = f.read().split()
+            for col in ['SK_ID_CURR', 'TARGET']:
+                if col in cols:
+                    cols.remove(col)
 
         if data == {}:
             # Fill the features with random values first
