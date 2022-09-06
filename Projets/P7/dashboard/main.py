@@ -7,8 +7,8 @@ import codecs
 import shap
 # import traceback
 
-# dashboard_url = 'https://homecredit-api-oc.herokuapp.com/'
-dashboard_url = 'http://127.0.0.1:8000/'
+dashboard_url = 'https://homecredit-api-oc.herokuapp.com/'
+# dashboard_url = 'http://127.0.0.1:8000/'
 
 
 def dillDecode(data):
@@ -39,7 +39,7 @@ async def post(session, url, data):
 # @st.experimental_memo(suppress_st_warning=True)
 
 
-async def load_applicant(applicant, nb_features):
+async def load_applicant(applicant, nb_features, explainer):
     st.write('## Client Sélectionné')
     st.dataframe(applicant, width=1500)
 
@@ -53,22 +53,25 @@ async def load_applicant(applicant, nb_features):
         else:
             st.error(score)
 
-    st.write('#### Détails')
-
-    async with aiohttp.ClientSession() as session:
-        shap_explanation = await post(session, dashboard_url+'shapExplanationApplicant', {'applicant': dillEncode(applicant.to_dict())})
-        if shap_explanation:
-            shap_explanation = dillDecode(shap_explanation)
-            st.pyplot(shap.plots.waterfall(
+        st.write('#### Détails')
+        shap_explanation = explainer(applicant)[0]
+        st.pyplot(shap.plots.waterfall(
                 shap_explanation, max_display=nb_features))
-        else:
-            st.error(shap_explanation)
+
+        # shap_explanation = await post(session, dashboard_url+'shapExplanationApplicant', {'applicant': dillEncode(applicant.to_dict())})
+        # if shap_explanation:
+        #     shap_explanation = dillDecode(shap_explanation)
+        #     st.pyplot(shap.plots.waterfall(
+        #         shap_explanation, max_display=nb_features))
+        # else:
+        #     st.error(shap_explanation)
 
 
 async def main():
     st.set_option('deprecation.showPyplotGlobalUse', False)
 
     async with aiohttp.ClientSession() as session:
+        # Get data
         data = await fetch(session, dashboard_url+'data')
         df = pd.DataFrame.from_dict(data, orient='tight')
         for col in list(df):
@@ -78,12 +81,24 @@ async def main():
         st.write('## Clients')
         st.dataframe(df, width=1500)
 
-    async with aiohttp.ClientSession() as session:
-        expected_value = await fetch(session, dashboard_url+'expectedValue')
-        if expected_value:
-            expected_value = dillDecode(expected_value)
+        # Get the model
+        model = await fetch(session, dashboard_url+'model')
+        if model:
+            model = dillDecode(model)
         else:
-            st.error(expected_value)
+            st.error(model)
+
+        # Compute SHAP values
+        explainer = shap.TreeExplainer(model, df.drop(columns='SK_ID_CURR'), model_output='probability')
+        expected_value = explainer.expected_value
+
+    
+        # Gat SHAP expected_value
+        # expected_value = await fetch(session, dashboard_url+'expectedValue')
+        # if expected_value:
+        #     expected_value = dillDecode(expected_value)
+        # else:
+        #     st.error(expected_value)
 
     # Inputs to the sidebar
 
@@ -116,7 +131,7 @@ async def main():
             feature, min, max, value)
     features_form_submit_button = features_form.form_submit_button('ok')
 
-    await load_applicant(applicant, nb_features)
+    await load_applicant(applicant.drop(columns='SK_ID_CURR'), nb_features, explainer)
 
 
 if __name__ == '__main__':

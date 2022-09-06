@@ -7,7 +7,7 @@ from HomeCreditApplicants import HomeCreditApplicant
 import dill
 import codecs
 import pandas as pd
-import shap
+# import shap
 
 # Create the app object
 app = FastAPI()
@@ -29,9 +29,9 @@ df = df.drop(columns='TARGET')
 X = df.drop(columns='SK_ID_CURR')
 ids_list = df['SK_ID_CURR'].values.astype(int).tolist()
 
-# Compute SHAP values
-explainer = shap.TreeExplainer(model, X, model_output='probability')
-expected_value = explainer.expected_value
+# # Compute SHAP values
+# explainer = shap.TreeExplainer(model, X, model_output='probability')
+# expected_value = explainer.expected_value
 
 
 def predict(applicant: HomeCreditApplicant):
@@ -59,6 +59,11 @@ def data():
     return df.to_dict('tight')
 
 
+@app.get('/model')
+def getModel():
+    return dillEncode(model)
+
+
 @app.get('/ids')
 def ids():
     return ids_list
@@ -84,21 +89,21 @@ def scoreID(id: int):
     return predict(applicant)
 
 
-@app.get('/expectedValue')
-def expectedValue():
-    return dillEncode(expected_value)
+# @app.get('/expectedValue')
+# def expectedValue():
+#     return dillEncode(expected_value)
 
 
-@app.post('/shapExplanationID')
-def shapExplanationID(id: int):
-    applicant = df[df['SK_ID_CURR'] == id].drop(columns='SK_ID_CURR')
-    return dillEncode(explainer(applicant)[0])
+# @app.post('/shapExplanationID')
+# def shapExplanationID(id: int):
+#     applicant = df[df['SK_ID_CURR'] == id].drop(columns='SK_ID_CURR')
+#     return dillEncode(explainer(applicant)[0])
 
 
-@app.post('/shapExplanationApplicant')
-def shapExplanationApplicant(applicant: str):
-    applicant = pd.DataFrame.from_dict(dillDecode(applicant))
-    return dillEncode(explainer(applicant.drop(columns='SK_ID_CURR'))[0])
+# @app.post('/shapExplanationApplicant')
+# def shapExplanationApplicant(applicant: str):
+#     applicant = pd.DataFrame.from_dict(dillDecode(applicant))
+#     return dillEncode(explainer(applicant)[0])
 
 
 # Run the API with uvicorn
