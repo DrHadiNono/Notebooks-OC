@@ -161,7 +161,7 @@ def train_cv(X_train, y_train, X_test, y_test, model_name, model, Perfs, param_g
     return perf, cv_model.best_estimator_
 
 
-def display_scores(Perfs, yloc=0.92, y=None, hue=None, width=None, height=None, rotation=None, hspace=0.3):
+def display_scores(Perfs, yloc=0.92, y=None, hue=None, width=None, height=None, rotation=None, hspace=0.3, loc='center right'):
     Perfs = Perfs.copy()
     scores = Perfs.columns.tolist()
     scores.remove('Model')
@@ -189,7 +189,7 @@ def display_scores(Perfs, yloc=0.92, y=None, hue=None, width=None, height=None, 
     rotation = (8 if hue == None else 5) if rotation == None else rotation
     for i in range(0, len(scores)):
         ax = axes[i]
-        sns.barplot(data=Perfs, ax=ax, x=Perfs['Model'], y=scores[i], hue=hue)
+        sns.barplot(data=Perfs, ax=ax, x=Perfs['Model'], y=scores[i], hue=hue)        
         if hue != None:
             ax.legend(loc='center right')
         for i in ax.containers:
@@ -197,6 +197,7 @@ def display_scores(Perfs, yloc=0.92, y=None, hue=None, width=None, height=None, 
         ax.set_xticklabels(ax.get_xticklabels(), rotation=rotation)
         ax.set_xlabel('', fontsize=0)
         ax.set_ylabel(ax.get_ylabel(), fontsize=14)
+        ax.legend(title=hue, loc=loc)
     plt.show()
 
 
@@ -450,17 +451,37 @@ def plot_hist(hist, metric, metric_val):
     ax2.legend(["train", "validation"], loc="upper right")
 
 
-def AUC(y_test, y_predict):
+def AUC(y_test, y_predict, y_train='', y_predict_train='', title=''):
     n_classes = len(np.unique(y_test))
+    train_set = y_train != '' and y_predict_train != ''
+    # Plot all ROC curves
+    lw = 2
+    roc_auc = 0
+
     if n_classes == 2:
         # calculate inputs for the roc curve
-        # fpr, tpr, thresholds = roc_curve(
-        #     y_test, y_predict)  # get the best threshold
-        # J = tpr - fpr
-        # ix = np.argmax(J)
-        # best_thresh = thresholds[ix]
+        fpr, tpr, thresholds = roc_curve(
+            y_test, y_predict)  # get the best threshold
+        roc_auc = auc(fpr, tpr)
+        J = tpr - fpr
+        ix = np.argmax(J)
+        best_thresh = thresholds[ix]
 
-        RocCurveDisplay.from_predictions(y_test, y_predict)
+        plt.plot(fpr, tpr, label=('Test: ' if train_set else '')+"AUC = {0:0.2f} best_thresh = {1:0.2f}".format(
+            roc_auc,best_thresh), color="purple", linewidth=2)
+
+        if train_set:
+            # calculate inputs for the roc curve
+            fpr, tpr, thresholds = roc_curve(
+                y_train, y_predict_train)  # get the best threshold
+            roc_auc = auc(fpr, tpr)
+            J = tpr - fpr
+            ix = np.argmax(J)
+            best_thresh = thresholds[ix]
+
+            plt.plot(fpr, tpr, label="Train: AUC = {0:0.2f} best_thresh = {1:0.2f}".format(
+            roc_auc,best_thresh), color="orange", linestyle='--', linewidth=2)            
+        title = "ROC curve " + title    
     else:
         plt.figure(figsize=(7, 6))
         # Compute ROC curve and ROC area for each class
@@ -489,9 +510,7 @@ def AUC(y_test, y_predict):
         fpr["macro"] = all_fpr
         tpr["macro"] = mean_tpr
         roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
-
-        # Plot all ROC curves
-        lw = 2
+        roc_auc = roc_auc["macro"]
 
         plt.plot(fpr["micro"], tpr["micro"], label="micro-average ROC curve (area = {0:0.2f})".format(
             roc_auc["micro"]), color="deeppink", linestyle=":", linewidth=4)
@@ -502,13 +521,15 @@ def AUC(y_test, y_predict):
         for i, color in zip(range(n_classes), colors):
             plt.plot(fpr[i], tpr[i], color=color, lw=lw,
                      label="ROC curve of class {0} (area = {1:0.2f})".format(i, roc_auc[i]))
+        title = "Some extension of ROC curve to multiclass " + title
 
-        plt.plot([0, 1], [0, 1], "k--", lw=lw)
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel("False Positive Rate")
-        plt.ylabel("True Positive Rate")
-        plt.title(
-            "Some extension of Receiver operating characteristic to multiclass")
-        plt.legend(loc="lower right")
-        plt.show()
+    plt.plot([0, 1], [0, 1], "k:", lw=lw)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")    
+    plt.title(title)
+    plt.legend(loc="lower right")
+    plt.show()
+
+    return roc_auc

@@ -209,7 +209,7 @@ async def prediction(applicant, nb_features_shap, _explainer, _model):
 async def main(model, explainer, df):
     st.set_option('deprecation.showPyplotGlobalUse', False)
 
-    st.write("# Dashboard Prêt à dépenser")
+    st.write('# Dashboard "Prêt à dépenser"')
     st.write('## Clients')
     with st.expander("Liste", True):
         df_filtred = filter_dataframe(df)
@@ -237,9 +237,9 @@ async def main(model, explainer, df):
 
     if settings_form_submit_button or st.session_state.load_prediction:
         st.session_state.load_prediction = True
-
-        # Applicants features
+        
         st.write('## Client Sélectionné')
+        # Applicants features
         with st.expander("Infos client"):
             # st.write('# Infos Client')
             with st.form(key='features_form'):
