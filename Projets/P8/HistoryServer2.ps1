@@ -1,0 +1,1 @@
+C:\apps\spark-3.3.0-bin-hadoop2\bin\spark-class.cmd org.apache.spark.deploy.history.HistoryServer

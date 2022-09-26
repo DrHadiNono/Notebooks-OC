@@ -1,0 +1,34 @@
+[
+  {
+    "classification": "spark",
+    "properties": { "maximizeResourceAllocation": "true" }
+  },
+  {
+    "Classification": "yarn-site",
+    "Properties": {
+      "yarn.nodemanager.vmem-check-enabled": "false",
+      "yarn.nodemanager.pmem-check-enabled": "false"
+    }
+  },
+  {
+    "Classification": "spark-defaults",
+    "Properties": {
+      "spark.driver.memory": "20G",
+      "spark.executor.memory": "20G",
+      "spark.driver.maxResultSize": "5G",
+      "spark.yarn.executor.memoryOverhead": "2G",
+      "spark.yarn.driver.memoryOverhead": "2G",
+      "spark.executor.extraJavaOptions": "-XX:+UseG1GC -XX:+UnlockDiagnosticVMOptions -XX:+G1SummarizeConcMark -XX:InitiatingHeapOccupancyPercent=35 -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:OnOutOfMemoryError='kill -9 %p'",
+      "spark.driver.extraJavaOptions": "-XX:+UseG1GC -XX:+UnlockDiagnosticVMOptions -XX:+G1SummarizeConcMark -XX:InitiatingHeapOccupancyPercent=35 -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:OnOutOfMemoryError='kill -9 %p'",
+      "spark.rdd.compress": "true",
+      "spark.shuffle.compress": "true",
+      "spark.shuffle.spill.compress": "true"
+    }
+  },
+  {
+    "Classification": "mapred-site",
+    "Properties": {
+      "mapreduce.map.output.compress": "true"
+    }
+  }
+]
